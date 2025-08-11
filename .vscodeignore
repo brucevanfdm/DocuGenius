@@ -1,0 +1,88 @@
+# Source files
+src/**
+.vscode/**
+.vscode-test/**
+
+# Build files
+tsconfig.json
+.eslintrc.json
+
+# Development files
+node_modules/**
+.gitignore
+.git/**
+
+# Build scripts and temporary files
+build-binaries.py
+create-embedded-binary.sh
+create-working-binary.py
+advanced-binary-builder.py
+final-fix-binary.py
+fix-markitdown-import.py
+ultimate-binary-builder.sh
+final-binary-fix.sh
+fix-binary.sh
+markitdown-build-env/**
+markitdown-advanced-env/**
+markitdown-main/**
+markitdown-main.zip
+standalone_markitdown/**
+ultimate-build-env/**
+minimal_build_env/**
+final_build_env/**
+final-fix-env/**
+build/**
+dist/**
+*.spec
+
+# Documentation (keep only essential ones)
+PROJECT_SUMMARY.md
+USAGE.md
+EMBEDDED_INSTALL_GUIDE.md
+INSTALL_GUIDE.md
+RELEASE_NOTES.md
+simple-install-guide.md
+icon.svg
+需求说明.txt
+
+# Test files
+**/test/**
+**/*.test.js
+**/*.test.ts
+
+# Logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# Mac
+.DS_Store

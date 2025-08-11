@@ -1,0 +1,127 @@
+{
+  "name": "docugenius",
+  "displayName": "DocuGenius",
+  "description": "Intelligent document converter that transforms Word, Excel, PowerPoint, and PDF files to Markdown with built-in conversion engine",
+  "version": "2.0.1",
+  "publisher": "brucevan",
+  "author": {
+    "name": "brucevan",
+    "email": "brucevanfdm@gmail.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brucevan/docugenius"
+  },
+  "bugs": {
+    "url": "https://github.com/brucevan/docugenius/issues"
+  },
+  "homepage": "https://github.com/brucevan/docugenius#readme",
+  "keywords": [
+    "markdown",
+    "converter",
+    "docx",
+    "pdf",
+    "excel",
+    "powerpoint",
+    "document",
+    "auto-convert",
+    "knowledge-base",
+    "docugenius",
+    "intelligent"
+  ],
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Formatters",
+    "Data Science"
+  ],
+  "icon": "icon.png",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "DocuGenius",
+      "properties": {
+        "documentConverter.autoConvert": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic conversion of supported files to Markdown"
+        },
+        "documentConverter.overwriteExisting": {
+          "type": "boolean",
+          "default": true,
+          "description": "Overwrite existing .md files if source file is newer"
+        },
+        "documentConverter.extractImages": {
+          "type": "boolean",
+          "default": true,
+          "description": "Extract images from documents to separate assets folder"
+        },
+        "documentConverter.supportedExtensions": {
+          "type": "array",
+          "default": [
+            ".docx",
+            ".xlsx",
+            ".pptx",
+            ".pdf"
+          ],
+          "description": "File extensions to monitor for automatic conversion"
+        },
+        "documentConverter.organizeInSubdirectory": {
+          "type": "boolean",
+          "default": true,
+          "description": "Organize converted Markdown files in a subdirectory to separate them from source files"
+        },
+        "documentConverter.markdownSubdirectoryName": {
+          "type": "string",
+          "default": "kb",
+          "description": "Name of the subdirectory where converted Markdown files will be stored"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "documentConverter.convertFile",
+        "title": "Convert to Markdown",
+        "category": "DocuGenius"
+      },
+      {
+        "command": "documentConverter.convertFolder",
+        "title": "Process All Files in Folder",
+        "category": "DocuGenius"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "documentConverter.convertFile",
+          "when": "resourceExtname =~ /\\.(docx|xlsx|pptx|pdf|txt|md|json|xml|html|csv|yaml|sql)$/",
+          "group": "documentConverter@1"
+        },
+        {
+          "command": "documentConverter.convertFolder",
+          "when": "explorerResourceIsFolder",
+          "group": "documentConverter@2"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
+    "@vscode/vsce": "^3.6.0",
+    "typescript": "^4.9.4"
+  }
+}

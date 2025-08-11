@@ -1,0 +1,567 @@
+import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { ConfigurationManager } from './configuration';
+import { StatusManager } from './statusManager';
+
+const execAsync = promisify(exec);
+
+export interface ConversionResult {
+    success: boolean;
+    outputPath?: string;
+    error?: string;
+}
+
+export class MarkitdownConverter {
+    private context: vscode.ExtensionContext;
+    private configManager: ConfigurationManager;
+    private statusManager: StatusManager;
+
+    constructor(context: vscode.ExtensionContext, configManager: ConfigurationManager, statusManager: StatusManager) {
+        this.context = context;
+        this.configManager = configManager;
+        this.statusManager = statusManager;
+    }
+
+    /**
+     * Process a file (convert or copy based on type)
+     */
+    async processFile(filePath: string, forceConvert: boolean = false): Promise<ConversionResult> {
+        // CRITICAL: Prevent infinite loop - never process files in markdown directory
+        const markdownSubdirName = this.configManager.getMarkdownSubdirectoryName();
+        if (filePath.includes(`/${markdownSubdirName}/`) || filePath.includes(`\\${markdownSubdirName}\\`)) {
+            console.log(`LOOP PREVENTION: Ignoring file in markdown directory: ${filePath}`);
+            return { success: true, outputPath: filePath };
+        }
+
+        const fileExtension = path.extname(filePath).toLowerCase();
+        const supportedExtensions = this.configManager.getSupportedExtensions();
+
+        if (supportedExtensions.includes(fileExtension)) {
+            // Convert document files
+            return this.convertFile(filePath, forceConvert);
+        } else {
+            // Copy text-based files
+            return this.copyFile(filePath, forceConvert);
+        }
+    }
+
+    /**
+     * Convert a single file to Markdown
+     */
+    async convertFile(filePath: string, forceConvert: boolean = false): Promise<ConversionResult> {
+        try {
+            // Check if file exists
+            if (!fs.existsSync(filePath)) {
+                throw new Error(`File not found: ${filePath}`);
+            }
+
+            // Check if conversion is needed (file modification time) - skip if forced
+            const outputPath = this.getOutputPath(filePath);
+            if (!forceConvert && !this.shouldConvert(filePath, outputPath)) {
+                console.log(`Skipping conversion for ${filePath} - output is up to date`);
+                return { success: true, outputPath };
+            }
+
+            // Show progress
+            const fileName = path.basename(filePath);
+            vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: `Converting ${fileName} to Markdown...`,
+                cancellable: false
+            }, async (progress) => {
+                progress.report({ increment: 0 });
+                
+                try {
+                    // Convert using built-in conversion engine
+                    const markdownContent = await this.callConverter(filePath);
+                    
+                    progress.report({ increment: 50 });
+                    
+                    // Save the markdown file
+                    fs.writeFileSync(outputPath, markdownContent, 'utf8');
+                    
+                    progress.report({ increment: 100 });
+                    
+                    // Show success message
+                    vscode.window.showInformationMessage(
+                        `Successfully converted ${fileName} → ${path.basename(outputPath)}`
+                    );
+                    
+                } catch (error) {
+                    console.error(`Error converting ${filePath}:`, error);
+                    vscode.window.showErrorMessage(
+                        `Failed to convert ${fileName}: ${error instanceof Error ? error.message : 'Unknown error'}`
+                    );
+                    throw error;
+                }
+            });
+
+            return { success: true, outputPath };
+
+        } catch (error) {
+            console.error(`Error converting file ${filePath}:`, error);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            };
+        }
+    }
+
+    /**
+     * Process all supported files in a folder
+     */
+    async convertFolder(folderPath: string): Promise<ConversionResult[]> {
+        try {
+            // Find all processable files (both convertible and copyable)
+            const allExtensions = [
+                ...this.configManager.getSupportedExtensions(),
+                '.md', '.markdown', '.mdown', '.mkd', '.mkdn',
+                '.txt', '.text',
+                '.json', '.jsonc',
+                '.xml', '.html', '.htm',
+                '.csv', '.tsv',
+                '.log',
+                '.yaml', '.yml',
+                '.toml', '.ini', '.cfg', '.conf',
+                '.sql'
+            ];
+
+            const files = this.findSupportedFiles(folderPath, allExtensions);
+
+            if (files.length === 0) {
+                vscode.window.showInformationMessage('No processable files found in the selected folder.');
+                return [];
+            }
+
+            const results: ConversionResult[] = [];
+            
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: `Converting ${files.length} files...`,
+                cancellable: false
+            }, async (progress) => {
+                const increment = 100 / files.length;
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    progress.report({
+                        increment: i === 0 ? 0 : increment,
+                        message: `Processing ${path.basename(file)}...`
+                    });
+
+                    const result = await this.processFile(file);
+                    results.push(result);
+                }
+                
+                progress.report({ increment: 100 });
+            });
+
+            const successCount = results.filter(r => r.success).length;
+            const failureCount = results.length - successCount;
+            
+            if (failureCount === 0) {
+                vscode.window.showInformationMessage(`Successfully processed ${successCount} files.`);
+            } else {
+                vscode.window.showWarningMessage(
+                    `Processed ${successCount} files successfully, ${failureCount} failed.`
+                );
+            }
+
+            return results;
+
+        } catch (error) {
+            console.error(`Error converting folder ${folderPath}:`, error);
+            vscode.window.showErrorMessage(`Failed to convert folder: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            return [];
+        }
+    }
+
+    /**
+     * Call built-in converter to convert file
+     */
+    private async callConverter(filePath: string): Promise<string> {
+        try {
+            // Try embedded binary first, then fallback to system installations
+            const commands = this.getConverterCommands();
+
+            let lastError: Error | null = null;
+
+            for (const command of commands) {
+                try {
+                    const fullCommand = `"${command}" "${filePath}"`;
+                    const { stdout, stderr } = await execAsync(fullCommand);
+
+                    if (stderr && !stdout) {
+                        throw new Error(`Converter error: ${stderr}`);
+                    }
+
+                    // Process the markdown content to handle images if needed
+                    let markdownContent = stdout;
+
+                    if (this.configManager.shouldExtractImages()) {
+                        markdownContent = await this.processImages(filePath, markdownContent);
+                    }
+
+                    return markdownContent;
+
+                } catch (error) {
+                    lastError = error instanceof Error ? error : new Error(String(error));
+                    continue; // Try next command
+                }
+            }
+
+            // If all commands failed, throw helpful error
+            const hasEmbeddedBinary = fs.existsSync(this.context.asAbsolutePath(`bin/${process.platform}/docugenius-cli${process.platform === 'win32' ? '.bat' : ''}`));
+
+            if (hasEmbeddedBinary) {
+                throw new Error(
+                    `Embedded converter binary failed to execute. This might be due to:\n\n` +
+                    `1. Missing system libraries\n` +
+                    `2. Architecture mismatch\n` +
+                    `3. Permission issues\n\n` +
+                    `Last error: ${lastError?.message || 'Unknown error'}`
+                );
+            } else {
+                throw new Error(
+                    `Built-in converter is not available. Please check the extension installation.\n\n` +
+                    `Last error: ${lastError?.message || 'Unknown error'}`
+                );
+            }
+
+        } catch (error) {
+            throw error;
+        }
+    }
+
+
+
+    /**
+     * Get output path for converted/copied file
+     */
+    private getOutputPath(filePath: string): string {
+        const dir = path.dirname(filePath);
+        const fileName = path.basename(filePath);
+        const fileExtension = path.extname(filePath).toLowerCase();
+
+        if (this.configManager.shouldOrganizeInSubdirectory()) {
+            // Create a subdirectory for processed files
+            const subdirName = this.configManager.getMarkdownSubdirectoryName();
+            const markdownDir = path.join(dir, subdirName);
+
+            // Ensure the markdown directory exists
+            if (!fs.existsSync(markdownDir)) {
+                fs.mkdirSync(markdownDir, { recursive: true });
+            }
+
+            // For files that need conversion, use .md extension
+            const supportedExtensions = this.configManager.getSupportedExtensions();
+            if (supportedExtensions.includes(fileExtension)) {
+                const nameWithoutExt = path.parse(fileName).name;
+                return path.join(markdownDir, `${nameWithoutExt}.md`);
+            } else {
+                // For files that are just copied, keep original extension
+                return path.join(markdownDir, fileName);
+            }
+        } else {
+            // Keep files in the same directory
+            const supportedExtensions = this.configManager.getSupportedExtensions();
+            if (supportedExtensions.includes(fileExtension)) {
+                const nameWithoutExt = path.parse(fileName).name;
+                return path.join(dir, `${nameWithoutExt}.md`);
+            } else {
+                // For copied files, add a suffix to avoid conflicts
+                const nameWithoutExt = path.parse(fileName).name;
+                const ext = path.parse(fileName).ext;
+                return path.join(dir, `${nameWithoutExt}_copy${ext}`);
+            }
+        }
+    }
+
+    /**
+     * Check if conversion is needed
+     */
+    private shouldConvert(inputPath: string, outputPath: string): boolean {
+        // If output doesn't exist, convert
+        if (!fs.existsSync(outputPath)) {
+            return true;
+        }
+
+        // If overwrite is disabled, skip
+        if (!this.configManager.shouldOverwriteExisting()) {
+            return false;
+        }
+
+        // Check modification times
+        const inputStat = fs.statSync(inputPath);
+        const outputStat = fs.statSync(outputPath);
+        
+        return inputStat.mtime > outputStat.mtime;
+    }
+
+    /**
+     * Find all supported files in a directory
+     */
+    private findSupportedFiles(dirPath: string, supportedExtensions: string[]): string[] {
+        const files: string[] = [];
+        
+        const scanDirectory = (currentPath: string) => {
+            const items = fs.readdirSync(currentPath);
+            
+            for (const item of items) {
+                const itemPath = path.join(currentPath, item);
+                const stat = fs.statSync(itemPath);
+                
+                if (stat.isDirectory()) {
+                    scanDirectory(itemPath);
+                } else if (stat.isFile()) {
+                    const ext = path.extname(item).toLowerCase();
+                    if (supportedExtensions.includes(ext)) {
+                        files.push(itemPath);
+                    }
+                }
+            }
+        };
+        
+        scanDirectory(dirPath);
+        return files;
+    }
+
+    /**
+     * Get available converter commands in order of preference
+     */
+    private getConverterCommands(): string[] {
+        const platform = process.platform;
+        const commands: string[] = [];
+
+        // 1. Try embedded binary first
+        const binaryName = platform === 'win32' ? 'docugenius-cli.bat' : 'docugenius-cli';
+        const embeddedBinaryPath = this.context.asAbsolutePath(`bin/${platform}/${binaryName}`);
+
+        // Check if embedded binary exists
+        if (fs.existsSync(embeddedBinaryPath)) {
+            commands.push(embeddedBinaryPath);
+        }
+
+        return commands;
+    }
+
+    /**
+     * Copy a text-based file to the markdown directory
+     */
+    async copyFile(filePath: string, forceConvert: boolean = false): Promise<ConversionResult> {
+        try {
+            // Check if file exists
+            if (!fs.existsSync(filePath)) {
+                throw new Error(`File not found: ${filePath}`);
+            }
+
+            const outputPath = this.getOutputPath(filePath);
+
+            // Check if copy is needed (file modification time) - skip if forced
+            if (!forceConvert && !this.shouldConvert(filePath, outputPath)) {
+                console.log(`Skipping copy for ${filePath} - output is up to date`);
+                return { success: true, outputPath };
+            }
+
+            // Show progress
+            const fileName = path.basename(filePath);
+            this.statusManager.showConversionInProgress(fileName);
+
+            // Copy the file
+            const fileContent = fs.readFileSync(filePath, 'utf8');
+            fs.writeFileSync(outputPath, fileContent, 'utf8');
+
+            // Show success message
+            this.statusManager.showConversionSuccess(filePath, outputPath);
+            this.statusManager.log(`✓ Copied: ${fileName} → ${path.basename(outputPath)}`);
+
+            return { success: true, outputPath };
+
+        } catch (error) {
+            console.error(`Error copying file ${filePath}:`, error);
+            const fileName = path.basename(filePath);
+            this.statusManager.showConversionError(fileName, error instanceof Error ? error.message : 'Unknown error');
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            };
+        }
+    }
+
+    /**
+     * Handle file deletion - clean up corresponding markdown file and assets
+     */
+    async handleFileDeleted(filePath: string): Promise<void> {
+        try {
+            const fileName = path.basename(filePath);
+            console.log(`Handling deletion of: ${fileName}`);
+
+            // Get the corresponding output path
+            const outputPath = this.getOutputPath(filePath);
+
+            // Delete the markdown file if it exists
+            if (fs.existsSync(outputPath)) {
+                fs.unlinkSync(outputPath);
+                console.log(`Deleted corresponding markdown file: ${outputPath}`);
+                this.statusManager.log(`🗑️ Deleted: ${path.basename(outputPath)} (source file ${fileName} was deleted)`);
+            }
+
+            // Delete assets folder if it exists
+            const originalDir = path.dirname(filePath);
+            const originalBaseName = path.parse(fileName).name;
+
+            let assetsDir: string;
+            if (this.configManager.shouldOrganizeInSubdirectory()) {
+                const subdirName = this.configManager.getMarkdownSubdirectoryName();
+                const markdownDir = path.join(originalDir, subdirName);
+                assetsDir = path.join(markdownDir, `${originalBaseName}_assets`);
+            } else {
+                assetsDir = path.join(originalDir, `${originalBaseName}_assets`);
+            }
+
+            if (fs.existsSync(assetsDir)) {
+                fs.rmSync(assetsDir, { recursive: true, force: true });
+                console.log(`Deleted assets folder: ${assetsDir}`);
+                this.statusManager.log(`🗑️ Deleted assets: ${originalBaseName}_assets/`);
+            }
+
+            // Show status update
+            this.statusManager.updateStatusBar(`🗑️ Cleaned up ${fileName}`, `Deleted markdown file and assets for ${fileName}`);
+
+            // Reset status bar after 3 seconds
+            setTimeout(() => {
+                this.statusManager.updateStatusBar('Ready');
+            }, 3000);
+
+        } catch (error) {
+            console.error(`Error handling file deletion for ${filePath}:`, error);
+            this.statusManager.log(`❌ Error cleaning up deleted file ${path.basename(filePath)}: ${error}`);
+        }
+    }
+
+    /**
+     * Check if a file should be converted to Markdown
+     */
+    private shouldFileBeConverted(filePath: string): boolean {
+        const fileExtension = path.extname(filePath).toLowerCase();
+
+        // Skip files that VS Code already handles well
+        const vscodeNativeFormats = [
+            '.md', '.markdown', '.mdown', '.mkd', '.mkdn',  // Markdown files
+            '.txt', '.text',                                // Plain text files
+            '.json', '.jsonc',                             // JSON files
+            '.xml', '.html', '.htm',                       // Markup files
+            '.csv', '.tsv',                                // Simple data files
+            '.log',                                        // Log files
+            '.yaml', '.yml',                               // YAML files
+            '.toml', '.ini', '.cfg', '.conf',             // Config files
+            '.js', '.ts', '.jsx', '.tsx',                 // Code files
+            '.py', '.java', '.cpp', '.c', '.h',           // More code files
+            '.css', '.scss', '.sass', '.less',            // Style files
+            '.sql',                                        // SQL files
+        ];
+
+        if (vscodeNativeFormats.includes(fileExtension)) {
+            return false;
+        }
+
+        // Only convert supported document formats
+        const supportedExtensions = this.configManager.getSupportedExtensions();
+        return supportedExtensions.includes(fileExtension);
+    }
+
+    /**
+     * Get the reason why a file is being skipped
+     */
+    private getSkipReason(filePath: string): string {
+        const fileExtension = path.extname(filePath).toLowerCase();
+
+        const vscodeNativeFormats = [
+            '.md', '.markdown', '.mdown', '.mkd', '.mkdn',
+            '.txt', '.text',
+            '.json', '.jsonc',
+            '.xml', '.html', '.htm',
+            '.csv', '.tsv',
+            '.log',
+            '.yaml', '.yml',
+            '.toml', '.ini', '.cfg', '.conf',
+            '.js', '.ts', '.jsx', '.tsx',
+            '.py', '.java', '.cpp', '.c', '.h',
+            '.css', '.scss', '.sass', '.less',
+            '.sql',
+        ];
+
+        if (vscodeNativeFormats.includes(fileExtension)) {
+            return 'VS Code already supports this format natively';
+        }
+
+        const supportedExtensions = this.configManager.getSupportedExtensions();
+        if (!supportedExtensions.includes(fileExtension)) {
+            return `Unsupported format (supported: ${supportedExtensions.join(', ')})`;
+        }
+
+        return 'Unknown reason';
+    }
+
+    /**
+     * Update image processing to work with new directory structure
+     */
+    private async processImages(originalFilePath: string, markdownContent: string): Promise<string> {
+        try {
+            const originalDir = path.dirname(originalFilePath);
+            const originalBaseName = path.parse(path.basename(originalFilePath)).name;
+
+            // First check if there are any images in the markdown content
+            const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+            const hasImages = imageRegex.test(markdownContent);
+
+            if (!hasImages) {
+                // No images found, return content as-is without creating assets folder
+                return markdownContent;
+            }
+
+            let assetsDir: string;
+
+            if (this.configManager.shouldOrganizeInSubdirectory()) {
+                // Create assets directory in the kb subdirectory
+                const subdirName = this.configManager.getMarkdownSubdirectoryName();
+                const markdownDir = path.join(originalDir, subdirName);
+                assetsDir = path.join(markdownDir, `${originalBaseName}_assets`);
+            } else {
+                // Create assets directory in the same location as the original file
+                assetsDir = path.join(originalDir, `${originalBaseName}_assets`);
+            }
+
+            // Create assets directory only when we have images
+            if (!fs.existsSync(assetsDir)) {
+                fs.mkdirSync(assetsDir, { recursive: true });
+            }
+
+            // Process image references in markdown
+            // Reset regex for processing (reuse the same regex variable)
+            imageRegex.lastIndex = 0; // Reset regex state
+            let processedContent = markdownContent;
+            let match;
+
+            while ((match = imageRegex.exec(markdownContent)) !== null) {
+                const [fullMatch, altText, imagePath] = match;
+
+                // If image path is not already relative to assets folder, update it
+                if (!imagePath.startsWith(`${originalBaseName}_assets/`)) {
+                    const imageName = path.basename(imagePath);
+                    const newImagePath = `${originalBaseName}_assets/${imageName}`;
+                    processedContent = processedContent.replace(fullMatch, `![${altText}](${newImagePath})`);
+                }
+            }
+
+            return processedContent;
+
+        } catch (error) {
+            console.warn(`Warning: Could not process images for ${originalFilePath}:`, error);
+            return markdownContent; // Return original content if image processing fails
+        }
+    }
+}
