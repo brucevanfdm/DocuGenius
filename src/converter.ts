@@ -85,10 +85,29 @@ export class MarkitdownConverter {
                     
                     progress.report({ increment: 100 });
                     
-                    // Show success message
-                    vscode.window.showInformationMessage(
-                        `Successfully converted ${fileName} → ${path.basename(outputPath)}`
-                    );
+                    // Show success message with action buttons (if enabled)
+                    if (this.configManager.shouldShowSuccessNotifications()) {
+                        vscode.window.showInformationMessage(
+                            `✅ Successfully converted ${fileName} → ${path.basename(outputPath)}`,
+                            'Open File',
+                            'Open Folder',
+                            'Show in Explorer'
+                        ).then(selection => {
+                            if (selection === 'Open File') {
+                                // Open the converted file
+                                vscode.workspace.openTextDocument(outputPath).then(doc => {
+                                    vscode.window.showTextDocument(doc);
+                                });
+                            } else if (selection === 'Open Folder') {
+                                // Open the containing folder in VS Code
+                                const folderUri = vscode.Uri.file(path.dirname(outputPath));
+                                vscode.commands.executeCommand('vscode.openFolder', folderUri, { forceNewWindow: false });
+                            } else if (selection === 'Show in Explorer') {
+                                // Reveal the file in system explorer
+                                vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outputPath));
+                            }
+                        });
+                    }
                     
                 } catch (error) {
                     console.error(`Error converting ${filePath}:`, error);
@@ -163,11 +182,40 @@ export class MarkitdownConverter {
             const failureCount = results.length - successCount;
             
             if (failureCount === 0) {
-                vscode.window.showInformationMessage(`Successfully processed ${successCount} files.`);
+                if (this.configManager.shouldShowSuccessNotifications()) {
+                    vscode.window.showInformationMessage(
+                        `🎉 Successfully processed ${successCount} files!`,
+                        'Open Output Folder',
+                        'Show Details'
+                    ).then(selection => {
+                        if (selection === 'Open Output Folder') {
+                            // Open the kb folder
+                            const kbFolder = path.join(folderPath, this.configManager.getMarkdownSubdirectoryName());
+                            if (fs.existsSync(kbFolder)) {
+                                vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(kbFolder));
+                            }
+                        } else if (selection === 'Show Details') {
+                            // Show output panel with conversion details
+                            vscode.commands.executeCommand('workbench.action.output.toggleOutput');
+                        }
+                    });
+                }
             } else {
+                // Always show warnings, even if success notifications are disabled
                 vscode.window.showWarningMessage(
-                    `Processed ${successCount} files successfully, ${failureCount} failed.`
-                );
+                    `⚠️ Processed ${successCount} files successfully, ${failureCount} failed.`,
+                    'Show Details',
+                    'Open Output Folder'
+                ).then(selection => {
+                    if (selection === 'Show Details') {
+                        vscode.commands.executeCommand('workbench.action.output.toggleOutput');
+                    } else if (selection === 'Open Output Folder') {
+                        const kbFolder = path.join(folderPath, this.configManager.getMarkdownSubdirectoryName());
+                        if (fs.existsSync(kbFolder)) {
+                            vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(kbFolder));
+                        }
+                    }
+                });
             }
 
             return results;

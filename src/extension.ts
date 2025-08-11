@@ -10,11 +10,11 @@ let statusManager: StatusManager | undefined;
 export function activate(context: vscode.ExtensionContext) {
     console.log('DocuGenius is now active!');
 
-    // Initialize status manager
-    statusManager = new StatusManager();
-
     // Initialize configuration manager
     const configManager = new ConfigurationManager();
+
+    // Initialize status manager
+    statusManager = new StatusManager(configManager);
 
     // Initialize converter
     const converter = new MarkitdownConverter(context, configManager, statusManager);

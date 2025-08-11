@@ -44,6 +44,14 @@ export class ConfigurationManager {
     }
 
     /**
+     * Check if success notifications should be shown
+     */
+    shouldShowSuccessNotifications(): boolean {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.SECTION);
+        return config.get<boolean>('showSuccessNotifications', true);
+    }
+
+    /**
      * Get the name of the subdirectory for converted files
      */
     getMarkdownSubdirectoryName(): string {

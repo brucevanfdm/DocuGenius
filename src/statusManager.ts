@@ -1,10 +1,13 @@
 import * as vscode from 'vscode';
+import { ConfigurationManager } from './configuration';
 
 export class StatusManager {
     private statusBarItem: vscode.StatusBarItem;
     private outputChannel: vscode.OutputChannel;
+    private configManager: ConfigurationManager;
 
-    constructor() {
+    constructor(configManager: ConfigurationManager) {
+        this.configManager = configManager;
         // Create status bar item
         this.statusBarItem = vscode.window.createStatusBarItem(
             vscode.StatusBarAlignment.Right,
@@ -57,10 +60,29 @@ export class StatusManager {
         // Show temporary success message in status bar
         this.updateStatusBar(`✓ Converted ${inputName}`, `Successfully converted ${inputName} to ${outputDir}/${outputName}`);
 
-        // Reset status bar after 3 seconds
+        // Show notification with action buttons (if enabled)
+        if (this.configManager.shouldShowSuccessNotifications()) {
+            vscode.window.showInformationMessage(
+                `✅ Successfully converted ${inputName} → ${outputName}`,
+                'Open File',
+                'Open Folder'
+            ).then(selection => {
+                if (selection === 'Open File') {
+                    // Open the converted file
+                    vscode.workspace.openTextDocument(outputFile).then(doc => {
+                        vscode.window.showTextDocument(doc);
+                    });
+                } else if (selection === 'Open Folder') {
+                    // Reveal the file in explorer
+                    vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outputFile));
+                }
+            });
+        }
+
+        // Reset status bar after 5 seconds (increased from 3 seconds)
         setTimeout(() => {
             this.updateStatusBar('Ready');
-        }, 3000);
+        }, 5000);
     }
 
     /**
