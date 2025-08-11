@@ -1,4 +1,4 @@
-# Markitdown Auto Converter | 文档自动转换器
+# DocuGenius | 文档精灵
 
 A VS Code extension that automatically converts Word, Excel, PowerPoint, and PDF files to Markdown with built-in conversion engine.
 
@@ -161,15 +161,3 @@ Check the Output panel (View → Output → Markitdown Auto Converter) for detai
 
 - Large files may take some time to convert | 大文件可能需要一些时间来转换
 - Complex document formatting may not be perfectly preserved in Markdown | 复杂的文档格式可能无法在Markdown中完美保留
-
-## Changelog | 更新日志
-
-### 1.0.0
-- Initial release | 初始版本
-- Built-in conversion engine, no external dependencies | 内置转换引擎，无外部依赖
-- Automatic file monitoring and conversion | 自动文件监控和转换
-- Manual conversion commands | 手动转换命令
-- Configurable settings | 可配置设置
-- Status bar integration | 状态栏集成
-- Image asset handling | 图片资源处理
-- Unified knowledge base organization | 统一知识库组织
