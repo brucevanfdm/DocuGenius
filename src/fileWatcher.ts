@@ -3,17 +3,20 @@ import * as path from 'path';
 import { MarkitdownConverter } from './converter';
 import { ConfigurationManager } from './configuration';
 import { StatusManager } from './statusManager';
+import { ProjectManager } from './projectManager';
 
 export class FileWatcher implements vscode.Disposable {
     private watchers: vscode.FileSystemWatcher[] = [];
     private converter: MarkitdownConverter;
     private configManager: ConfigurationManager;
     private statusManager: StatusManager;
+    private projectManager: ProjectManager;
 
-    constructor(converter: MarkitdownConverter, configManager: ConfigurationManager, statusManager: StatusManager) {
+    constructor(converter: MarkitdownConverter, configManager: ConfigurationManager, statusManager: StatusManager, projectManager: ProjectManager) {
         this.converter = converter;
         this.configManager = configManager;
         this.statusManager = statusManager;
+        this.projectManager = projectManager;
         this.initializeWatchers();
 
         // Listen for configuration changes
@@ -28,66 +31,29 @@ export class FileWatcher implements vscode.Disposable {
         // Dispose existing watchers
         this.disposeWatchers();
 
-        // Only create watchers if auto-convert is enabled
-        if (!this.configManager.isAutoConvertEnabled()) {
-            return;
-        }
-
-        // Get all extensions we want to monitor (both convertible and copyable)
-        const convertibleExtensions = this.configManager.getSupportedExtensions();
-        const copyableExtensions = [
-            '.md', '.markdown', '.mdown', '.mkd', '.mkdn',
-            '.txt', '.text',
-            '.json', '.jsonc',
-            '.xml', '.html', '.htm',
-            '.csv', '.tsv',
-            '.log',
-            '.yaml', '.yml',
-            '.toml', '.ini', '.cfg', '.conf',
-            '.sql'
-        ];
-
-        const allExtensions = [...convertibleExtensions, ...copyableExtensions];
-
-        // Create a pattern for all supported extensions, but exclude markdown directory
-        const extensionPattern = allExtensions.map(ext => ext.replace('.', '')).join(',');
-        const markdownSubdirName = this.configManager.getMarkdownSubdirectoryName();
-        const pattern = `**/*.{${extensionPattern}}`;
-
-        console.log(`Creating file watcher for pattern: ${pattern}`);
-        console.log(`Excluding markdown directory: ${markdownSubdirName}`);
-
-        const watcher = vscode.workspace.createFileSystemWatcher(pattern);
-
-        // Handle file creation
-        watcher.onDidCreate(async (uri) => {
-            console.log(`File created: ${uri.fsPath}`);
-            await this.handleFileEvent(uri, 'created');
-        });
-
-        // Handle file changes (for update detection)
-        watcher.onDidChange(async (uri) => {
-            console.log(`File changed: ${uri.fsPath}`);
-            await this.handleFileEvent(uri, 'changed');
-        });
-
-        // Handle file deletion
-        watcher.onDidDelete(async (uri) => {
-            console.log(`File deleted: ${uri.fsPath}`);
-            await this.handleFileEvent(uri, 'deleted');
-        });
-
-        this.watchers.push(watcher);
+        // Auto-convert functionality has been disabled
+        // Files will only be converted in two scenarios:
+        // 1. When folder is opened and user confirms conversion
+        // 2. Manual conversion via right-click context menu
+        console.log('File watcher disabled - auto-convert functionality removed');
+        return;
     }
 
     private async handleFileEvent(uri: vscode.Uri, eventType: 'created' | 'changed' | 'deleted'): Promise<void> {
         try {
             const filePath = uri.fsPath;
+            const fileName = path.basename(filePath);
 
             // CRITICAL: Prevent infinite loop by ignoring files in markdown directory
             const markdownSubdirName = this.configManager.getMarkdownSubdirectoryName();
             if (filePath.includes(`/${markdownSubdirName}/`) || filePath.includes(`\\${markdownSubdirName}\\`)) {
                 console.log(`Ignoring file in markdown directory: ${filePath}`);
+                return;
+            }
+
+            // Ignore DocuGenius configuration files
+            if (fileName === '.docugenius.json' || fileName === '.docugenius.example.json') {
+                console.log(`Ignoring DocuGenius configuration file: ${filePath}`);
                 return;
             }
 

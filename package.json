@@ -2,7 +2,7 @@
   "name": "docugenius",
   "displayName": "DocuGenius",
   "description": "Intelligent document converter that transforms Word, Excel, PowerPoint, and PDF files to Markdown with built-in conversion engine",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "publisher": "brucevan",
   "author": {
     "name": "brucevan",
@@ -98,6 +98,21 @@
       {
         "command": "documentConverter.convertFolder",
         "title": "Process All Files in Folder",
+        "category": "DocuGenius"
+      },
+      {
+        "command": "documentConverter.enableProject",
+        "title": "Enable for Current Project",
+        "category": "DocuGenius"
+      },
+      {
+        "command": "documentConverter.disableProject",
+        "title": "Disable for Current Project",
+        "category": "DocuGenius"
+      },
+      {
+        "command": "documentConverter.showProjectStatus",
+        "title": "Show Project Status",
         "category": "DocuGenius"
       }
     ],

@@ -48,11 +48,55 @@ The extension will work with basic file types (text, JSON, CSV, XML) without add
 
 ## Usage | 使用方法
 
+### 🎯 Project-Level Activation | 项目级别激活
+
+**智能启用机制**: DocuGenius 采用项目级别的智能激活，避免对不需要文档转换的项目造成干扰。
+
+**Smart Activation**: DocuGenius uses project-level intelligent activation to avoid interfering with projects that don't need document conversion.
+
+#### 首次使用 | First Time Usage
+
+1. **打开包含文档的文件夹** | **Open a folder containing documents**
+   - 当您在 Trae 中打开包含 `.docx`、`.pptx`、`.xlsx`、`.pdf` 等文档的文件夹时
+   - When you open a folder containing `.docx`, `.pptx`, `.xlsx`, `.pdf` documents in Trae
+
+2. **智能检测与提示** | **Smart Detection & Prompt**
+   - 扩展会检测到文档文件，并询问是否为此项目启用 DocuGenius
+   - The extension detects document files and asks if you want to enable DocuGenius for this project
+   - 选择"启用"后，将创建 `.docugenius.json` 配置文件并开始自动转换
+   - After selecting "Enable", a `.docugenius.json` config file is created and auto-conversion begins
+
+3. **自动识别已使用项目** | **Auto-Recognition of Used Projects**
+   - 如果项目中已存在 `kb` 文件夹，说明之前使用过，会自动启用
+   - If a `kb` folder already exists, indicating previous usage, it will be automatically enabled
+
+#### 项目管理命令 | Project Management Commands
+
+通过命令面板 (`Cmd/Ctrl + Shift + P`) 访问：| Access via Command Palette (`Cmd/Ctrl + Shift + P`):
+
+- **`DocuGenius: Enable for Current Project`** - 为当前项目启用 | Enable for current project
+- **`DocuGenius: Disable for Current Project`** - 为当前项目禁用 | Disable for current project  
+- **`DocuGenius: Show Project Status`** - 查看项目状态 | View project status
+
+#### 项目配置文件 | Project Configuration File
+
+每个启用的项目会包含 `.docugenius.json` 配置文件：| Each enabled project contains a `.docugenius.json` config file:
+
+```json
+{
+  "enabled": true,
+  "autoConvert": true,
+  "markdownSubdirectoryName": "kb",
+  "supportedExtensions": [".docx", ".xlsx", ".pptx", ".pdf"],
+  "lastActivated": "2024-01-01T00:00:00.000Z"
+}
+```
+
 ### Automatic Conversion | 自动转换
 
-Once installed, the extension automatically monitors your workspace for new document files. When you add a supported file (by copying, moving, or creating), it will be automatically converted to Markdown.
+启用后，扩展会自动监控工作区中的文档文件变化。当您添加支持的文件（通过复制、移动或创建）时，它将自动转换为Markdown。
 
-安装后，扩展会自动监控工作区中的新文档文件。当您添加支持的文件（通过复制、移动或创建）时，它将自动转换为Markdown。
+Once enabled, the extension automatically monitors document file changes in your workspace. When you add a supported file (by copying, moving, or creating), it will be automatically converted to Markdown.
 
 ### Manual Conversion | 手动转换
 

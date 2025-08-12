@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "autoConvert": true,
+  "markdownSubdirectoryName": "kb",
+  "supportedExtensions": [
+    ".docx",
+    ".xlsx", 
+    ".pptx",
+    ".pdf"
+  ],
+  "lastActivated": "2024-01-01T00:00:00.000Z"
+}

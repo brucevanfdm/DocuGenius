@@ -365,6 +365,11 @@ export class MarkitdownConverter {
                 if (stat.isDirectory()) {
                     scanDirectory(itemPath);
                 } else if (stat.isFile()) {
+                    // Skip DocuGenius configuration files
+                    if (item === '.docugenius.json' || item === '.docugenius.example.json') {
+                        continue;
+                    }
+                    
                     const ext = path.extname(item).toLowerCase();
                     if (supportedExtensions.includes(ext)) {
                         files.push(itemPath);
