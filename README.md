@@ -12,7 +12,7 @@ A VS Code extension that automatically converts Word, Excel, PowerPoint, and PDF
   - **Excel**: Multi-sheet support with proper table formatting (openpyxl) | 多工作表支持，正确的表格格式
   - **PowerPoint**: Slide-by-slide text extraction (python-pptx) | 逐幻灯片文本提取
   - **PDF**: Page-by-page text extraction (PyPDF2) | 逐页文本提取
-- **📁 Unified Knowledge Base | 统一知识库**: All files organized in `kb/` directory for unified search | 所有文件统一组织在`kb/`目录中便于搜索
+- **📁 Unified Knowledge Base | 统一知识库**: All files organized in `DocuGenius/` directory for unified search | 所有文件统一组织在`DocuGenius/`目录中便于搜索
 - **🔄 Manual Conversion | 手动转换**: Right-click any supported file to manually convert it | 右键点击任何支持的文件进行手动转换
 - **🔄 Complete Lifecycle Management | 完整生命周期管理**: Automatically cleans up when source files are deleted | 源文件删除时自动清理
 - **📊 Smart Processing | 智能处理**: Converts documents and copies text files | 转换文档文件并复制文本文件
@@ -122,7 +122,7 @@ your-project/
 ├── presentation.pptx               # Source file (for editing) | 源文件（用于编辑）
 ├── notes.txt                       # Source file (for editing) | 源文件（用于编辑）
 ├── config.json                     # Source file (for editing) | 源文件（用于编辑）
-└── kb/                             # Knowledge base (for VS Code search) | 知识库（用于VS Code搜索）
+└── DocuGenius/                     # Knowledge base (for VS Code search) | 知识库（用于VS Code搜索）
     ├── document.md                 # Converted from docx | 从docx转换而来
     ├── presentation.md             # Converted from pptx | 从pptx转换而来
     ├── notes.txt                   # Copied from source | 从源文件复制

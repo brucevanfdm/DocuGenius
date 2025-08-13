@@ -18,6 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize configuration manager
     const configManager = new ConfigurationManager();
     configManager.setProjectManager(projectManager);
+    projectManager.setConfigurationManager(configManager);
 
     // Initialize status manager
     statusManager = new StatusManager(configManager);
@@ -25,17 +26,20 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize converter
     const converter = new MarkitdownConverter(context, configManager, statusManager);
 
-    // Auto-convert functionality has been disabled
-    // File watcher is no longer initialized automatically
+    // Initialize file watcher
+    fileWatcher = new FileWatcher(converter, configManager, statusManager, projectManager);
     
     // Check if we should show enable prompt for new projects
     if (!projectManager.isProjectEnabled()) {
         setTimeout(() => {
             if (projectManager!.shouldShowEnablePrompt()) {
                 projectManager!.showEnableDialog().then(enabled => {
-                    if (enabled && statusManager) {
-                        // Show status but don't initialize file watcher
-                        statusManager.showWatcherStatus(false, configManager.getSupportedExtensions());
+                    if (enabled && statusManager && fileWatcher && projectManager) {
+                        // Reinitialize file watcher when project is enabled
+                        fileWatcher.dispose();
+                        fileWatcher = new FileWatcher(converter, configManager, statusManager, projectManager);
+                        context.subscriptions.push(fileWatcher);
+                        statusManager.showWatcherStatus(configManager.isAutoConvertEnabled(), configManager.getSupportedExtensions());
                     }
                 });
             }
@@ -49,12 +53,21 @@ export function activate(context: vscode.ExtensionContext) {
             await converter.processFile(uri.fsPath, true);
         } else {
             // If no URI provided, ask user to select a file
+            // Build file filters based on settings
+            const supportedExtensions = configManager.getSupportedExtensions().map(ext => ext.substring(1)); // Remove leading dot
+            let allExtensions = [...supportedExtensions];
+
+            if (configManager.shouldCopyTextFiles()) {
+                const textExtensions = ['txt', 'md', 'markdown', 'json', 'xml', 'html', 'csv', 'yaml', 'sql'];
+                allExtensions = [...supportedExtensions, ...textExtensions];
+            }
+
             const fileUri = await vscode.window.showOpenDialog({
                 canSelectFiles: true,
                 canSelectFolders: false,
                 canSelectMany: false,
                 filters: {
-                    'All Supported Files': ['docx', 'xlsx', 'pptx', 'pdf', 'txt', 'md', 'json', 'xml', 'html', 'csv', 'yaml', 'sql']
+                    'All Supported Files': allExtensions
                 }
             });
 
@@ -86,12 +99,14 @@ export function activate(context: vscode.ExtensionContext) {
     // Project management commands
     const enableProjectCommand = vscode.commands.registerCommand('documentConverter.enableProject', async () => {
         if (!projectManager || !statusManager) return;
-        
+
         const enabled = await projectManager.enableForProject(undefined, true);
-        if (enabled) {
-            // Auto-convert functionality has been disabled
-            // Only manual conversion and folder opening conversion are supported
-            statusManager.showWatcherStatus(false, configManager.getSupportedExtensions());
+        if (enabled && fileWatcher) {
+            // Reinitialize file watcher when project is enabled
+            fileWatcher.dispose();
+            fileWatcher = new FileWatcher(converter, configManager, statusManager, projectManager);
+            context.subscriptions.push(fileWatcher);
+            statusManager.showWatcherStatus(configManager.isAutoConvertEnabled(), configManager.getSupportedExtensions());
         }
     });
 

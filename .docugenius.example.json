@@ -1,10 +1,10 @@
 {
   "enabled": true,
-  "autoConvert": true,
-  "markdownSubdirectoryName": "kb",
+  "autoConvert": false,
+  "markdownSubdirectoryName": "DocuGenius",
   "supportedExtensions": [
     ".docx",
-    ".xlsx", 
+    ".xlsx",
     ".pptx",
     ".pdf"
   ],

@@ -12,6 +12,8 @@ export class FileWatcher implements vscode.Disposable {
     private statusManager: StatusManager;
     private projectManager: ProjectManager;
 
+
+
     constructor(converter: MarkitdownConverter, configManager: ConfigurationManager, statusManager: StatusManager, projectManager: ProjectManager) {
         this.converter = converter;
         this.configManager = configManager;
@@ -31,13 +33,57 @@ export class FileWatcher implements vscode.Disposable {
         // Dispose existing watchers
         this.disposeWatchers();
 
-        // Auto-convert functionality has been disabled
-        // Files will only be converted in two scenarios:
-        // 1. When folder is opened and user confirms conversion
-        // 2. Manual conversion via right-click context menu
-        console.log('File watcher disabled - auto-convert functionality removed');
-        return;
+        // Only initialize watchers if auto-convert is enabled
+        if (!this.configManager.isAutoConvertEnabled()) {
+            console.log('File watcher disabled - auto-convert is turned off');
+            return;
+        }
+
+        // Check if project is enabled for auto-conversion
+        if (!this.projectManager.isProjectEnabled()) {
+            console.log('File watcher disabled - project not enabled for DocuGenius');
+            return;
+        }
+
+        console.log('Initializing file watchers for auto-conversion');
+
+        // Create watchers for supported file types
+        const supportedExtensions = this.configManager.getSupportedExtensions();
+        let allExtensions = [...supportedExtensions];
+
+        // Only add copyable extensions if user has enabled text file copying
+        if (this.configManager.shouldCopyTextFiles()) {
+            const copyableExtensions = [
+                '.md', '.markdown', '.mdown', '.mkd', '.mkdn',  // Markdown files
+                '.txt', '.text',                                // Plain text files
+                '.json', '.jsonc',                             // JSON files
+                '.xml', '.html', '.htm',                       // Markup files
+                '.csv', '.tsv',                                // Simple data files
+                '.log',                                        // Log files
+                '.yaml', '.yml',                               // YAML files
+                '.toml', '.ini', '.cfg', '.conf',             // Config files
+                '.sql',                                        // SQL files
+            ];
+            allExtensions = [...supportedExtensions, ...copyableExtensions];
+        }
+
+        // Create a pattern that matches all supported extensions
+        const patterns = allExtensions.map(ext => `**/*${ext}`);
+
+        for (const pattern of patterns) {
+            const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+
+            watcher.onDidCreate(uri => this.handleFileEvent(uri, 'created'));
+            watcher.onDidChange(uri => this.handleFileEvent(uri, 'changed'));
+            watcher.onDidDelete(uri => this.handleFileEvent(uri, 'deleted'));
+
+            this.watchers.push(watcher);
+        }
+
+        console.log(`File watchers initialized for ${patterns.length} patterns`);
     }
+
+
 
     private async handleFileEvent(uri: vscode.Uri, eventType: 'created' | 'changed' | 'deleted'): Promise<void> {
         try {
@@ -74,12 +120,60 @@ export class FileWatcher implements vscode.Disposable {
             // Add a small delay to ensure file is fully written
             await new Promise(resolve => setTimeout(resolve, 1000));
 
+            // For file creation events, ask for user confirmation before converting
+            if (eventType === 'created') {
+                const shouldConvert = await this.askForConversionConfirmation(fileName, fileExtension);
+                if (!shouldConvert) {
+                    console.log(`User declined to convert: ${fileName}`);
+                    return;
+                }
+            }
+
             // Process the file (convert or copy)
             await this.converter.processFile(filePath);
 
         } catch (error) {
             console.error(`Error handling file event for ${uri.fsPath}:`, error);
             vscode.window.showErrorMessage(`Failed to process file: ${path.basename(uri.fsPath)}`);
+        }
+    }
+
+    /**
+     * Ask user for confirmation before converting a newly created file
+     */
+    private async askForConversionConfirmation(fileName: string, fileExtension: string): Promise<boolean> {
+        // Check if this is a convertible document (not just a copyable file)
+        const supportedExtensions = this.configManager.getSupportedExtensions();
+        const isConvertibleDocument = supportedExtensions.includes(fileExtension);
+
+        if (!isConvertibleDocument) {
+            // For copyable files (like .md, .txt), don't ask for confirmation
+            return true;
+        }
+
+        // Ask for confirmation for document conversion
+        const choice = await vscode.window.showInformationMessage(
+            `📄 检测到新文档文件: ${fileName}`,
+            {
+                modal: false,
+                detail: `是否要将此文档转换为 Markdown 格式？\n\n文件类型: ${fileExtension.toUpperCase()}\n转换后将保存到 "${this.configManager.getMarkdownSubdirectoryName()}" 文件夹中。`
+            },
+            '立即转换',
+            '跳过',
+            '禁用自动提醒'
+        );
+
+        switch (choice) {
+            case '立即转换':
+                return true;
+            case '禁用自动提醒':
+                // Disable auto-convert for this project
+                await this.configManager.updateConfiguration('autoConvert', false);
+                vscode.window.showInformationMessage('已禁用自动转换提醒。您可以随时在设置中重新启用。');
+                return false;
+            case '跳过':
+            default:
+                return false;
         }
     }
 
@@ -103,20 +197,23 @@ export class FileWatcher implements vscode.Disposable {
             return true;
         }
 
-        // Also process files that should be copied to markdown directory
-        const copyableExtensions = [
-            '.md', '.markdown', '.mdown', '.mkd', '.mkdn',  // Markdown files
-            '.txt', '.text',                                // Plain text files
-            '.json', '.jsonc',                             // JSON files
-            '.xml', '.html', '.htm',                       // Markup files
-            '.csv', '.tsv',                                // Simple data files
-            '.log',                                        // Log files
-            '.yaml', '.yml',                               // YAML files
-            '.toml', '.ini', '.cfg', '.conf',             // Config files
-            '.sql',                                        // SQL files
-        ];
+        // Only process copyable files if user has enabled text file copying
+        if (this.configManager.shouldCopyTextFiles()) {
+            const copyableExtensions = [
+                '.md', '.markdown', '.mdown', '.mkd', '.mkdn',  // Markdown files
+                '.txt', '.text',                                // Plain text files
+                '.json', '.jsonc',                             // JSON files
+                '.xml', '.html', '.htm',                       // Markup files
+                '.csv', '.tsv',                                // Simple data files
+                '.log',                                        // Log files
+                '.yaml', '.yml',                               // YAML files
+                '.toml', '.ini', '.cfg', '.conf',             // Config files
+                '.sql',                                        // SQL files
+            ];
+            return copyableExtensions.includes(fileExtension);
+        }
 
-        return copyableExtensions.includes(fileExtension);
+        return false;
     }
 
     dispose(): void {

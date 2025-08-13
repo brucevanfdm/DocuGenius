@@ -25,8 +25,8 @@ DocuGenius now uses **project-level intelligent activation** that perfectly bala
    - Only prompts when document files are detected
 
 3. **自动识别** | **Auto Recognition**
-   - 已使用过的项目（存在 `kb` 文件夹）自动启用
-   - Previously used projects (with existing `kb` folder) are automatically enabled
+   - 已使用过的项目（存在 `DocuGenius` 或 `kb` 文件夹）自动启用
+   - Previously used projects (with existing `DocuGenius` or `kb` folder) are automatically enabled
 
 ### 🛠️ New Features | 新功能
 
@@ -40,7 +40,7 @@ Each enabled project now contains a `.docugenius.json` configuration file:
 {
   "enabled": true,
   "autoConvert": true,
-  "markdownSubdirectoryName": "kb",
+  "markdownSubdirectoryName": "DocuGenius",
   "supportedExtensions": [".docx", ".xlsx", ".pptx", ".pdf"],
   "lastActivated": "2024-01-01T00:00:00.000Z"
 }

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ConfigurationManager } from './configuration';
 
 export interface ProjectConfig {
     enabled: boolean;
@@ -14,11 +15,19 @@ export class ProjectManager {
     private static readonly CONFIG_FILE_NAME = '.docugenius.json';
     private static readonly DEFAULT_CONFIG: ProjectConfig = {
         enabled: false,
-        autoConvert: true,
-        markdownSubdirectoryName: 'kb',
+        autoConvert: false,
+        markdownSubdirectoryName: 'DocuGenius',
         supportedExtensions: ['.docx', '.xlsx', '.pptx', '.pdf'],
         lastActivated: new Date().toISOString()
     };
+    private configManager?: ConfigurationManager;
+
+    /**
+     * Set configuration manager reference
+     */
+    setConfigurationManager(configManager: ConfigurationManager): void {
+        this.configManager = configManager;
+    }
 
     /**
      * 检查当前工作区是否启用了 DocuGenius
@@ -31,7 +40,12 @@ export class ProjectManager {
 
         const rootPath = workspaceFolders[0].uri.fsPath;
         const configPath = path.join(rootPath, ProjectManager.CONFIG_FILE_NAME);
-        
+
+        // If project config files are disabled, consider project enabled if DocuGenius or legacy kb folder exists
+        if (!this.configManager?.shouldCreateProjectConfig()) {
+            return this.hasExistingKbFolder(rootPath);
+        }
+
         if (fs.existsSync(configPath)) {
             try {
                 const config = this.loadProjectConfig(rootPath);
@@ -42,14 +56,21 @@ export class ProjectManager {
             }
         }
 
-        // 如果没有配置文件，检查是否已存在 kb 文件夹
+        // 如果没有配置文件，检查是否已存在 DocuGenius 或 kb 文件夹
         return this.hasExistingKbFolder(rootPath);
     }
 
     /**
-     * 检查项目中是否已存在 kb 文件夹（说明之前使用过）
+     * 检查项目中是否已存在 DocuGenius 或 kb 文件夹（说明之前使用过）
      */
     private hasExistingKbFolder(rootPath: string): boolean {
+        // Check for new DocuGenius folder first
+        const docuGeniusPath = path.join(rootPath, 'DocuGenius');
+        if (fs.existsSync(docuGeniusPath) && fs.statSync(docuGeniusPath).isDirectory()) {
+            return true;
+        }
+
+        // Check for legacy kb folder for backward compatibility
         const kbPath = path.join(rootPath, 'kb');
         return fs.existsSync(kbPath) && fs.statSync(kbPath).isDirectory();
     }
@@ -97,11 +118,14 @@ export class ProjectManager {
         };
 
         try {
-            await this.saveProjectConfig(rootPath, projectConfig);
-            
+            // Only create project config file if user has enabled this option
+            if (this.configManager?.shouldCreateProjectConfig()) {
+                await this.saveProjectConfig(rootPath, projectConfig);
+            }
+
             if (showConvertPrompt && this.hasConvertibleFiles(rootPath)) {
                 const choice = await vscode.window.showInformationMessage(
-                    `✅ DocuGenius 已启用！检测到项目中有可转换的文档文件，是否立即转换？`,
+                    `DocuGenius 已启用！检测到项目中有可转换的文档文件，是否立即转换？`,
                     '立即转换',
                     '稍后手动转换'
                 );
@@ -112,7 +136,7 @@ export class ProjectManager {
                 }
             } else {
                 vscode.window.showInformationMessage(
-                    `✅ DocuGenius 已为当前项目启用！文档将自动转换到 "${projectConfig.markdownSubdirectoryName}" 文件夹。`
+                    `✅ DocuGenius 已在当前项目启用！文档将自动转换到 "${projectConfig.markdownSubdirectoryName}" 文件夹。`
                 );
             }
             
@@ -139,7 +163,7 @@ export class ProjectManager {
 
         try {
             await this.saveProjectConfig(rootPath, config);
-            vscode.window.showInformationMessage('DocuGenius 已为当前项目禁用');
+            vscode.window.showInformationMessage('DocuGenius 已在当前项目禁用');
             return true;
         } catch (error) {
             console.error('Error disabling project:', error);
@@ -191,10 +215,10 @@ export class ProjectManager {
      */
     async showEnableDialog(): Promise<boolean> {
         const choice = await vscode.window.showInformationMessage(
-            '🔍 检测到此项目包含文档文件。是否要为此项目启用 DocuGenius 自动转换功能？',
+            '是否要为此项目启用 DocuGenius ？',
             {
                 modal: true,
-                detail: '启用后，DocuGenius 将自动监听文档变化并转换为 Markdown 格式，存储在 "kb" 文件夹中。\n\n您可以随时在设置中禁用此功能。'
+                detail: '启用后，DocuGenius 将自动监听文档变化并转换为 "md" 格式，存储在 "DocuGenius" 文件夹中。\n\n您可以随时在设置中禁用此功能。'
             },
             '启用',
             '不启用',
@@ -205,11 +229,13 @@ export class ProjectManager {
             case '启用':
                 return await this.enableForProject(undefined, true);
             case '不启用':
-                // 创建配置文件但设置为禁用，避免重复提醒
-                await this.saveProjectConfig(
-                    vscode.workspace.workspaceFolders![0].uri.fsPath,
-                    { ...ProjectManager.DEFAULT_CONFIG, enabled: false }
-                );
+                // 只有在用户启用项目配置文件时才创建配置文件，避免重复提醒
+                if (this.configManager?.shouldCreateProjectConfig()) {
+                    await this.saveProjectConfig(
+                        vscode.workspace.workspaceFolders![0].uri.fsPath,
+                        { ...ProjectManager.DEFAULT_CONFIG, enabled: false }
+                    );
+                }
                 return false;
             case '稍后提醒':
             default:
@@ -240,13 +266,13 @@ export class ProjectManager {
 
         const rootPath = workspaceFolders[0].uri.fsPath;
         const configPath = path.join(rootPath, ProjectManager.CONFIG_FILE_NAME);
-        
-        // 如果已有配置文件，不显示提示
-        if (fs.existsSync(configPath)) {
+
+        // If project config files are enabled and config file exists, don't show prompt
+        if (this.configManager?.shouldCreateProjectConfig() && fs.existsSync(configPath)) {
             return false;
         }
 
-        // 如果已有 kb 文件夹，自动启用，不显示提示
+        // 如果已有 DocuGenius 或 kb 文件夹，自动启用，不显示提示
         if (this.hasExistingKbFolder(rootPath)) {
             this.enableForProject();
             return false;

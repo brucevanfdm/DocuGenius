@@ -49,7 +49,7 @@ export class StatusManager {
     /**
      * Show conversion success
      */
-    showConversionSuccess(inputFile: string, outputFile: string): void {
+    showConversionSuccess(inputFile: string, outputFile: string, suppressNotification: boolean = false): void {
         const inputName = this.getFileName(inputFile);
         const outputName = this.getFileName(outputFile);
         const outputDir = this.getDirectoryName(outputFile);
@@ -60,10 +60,10 @@ export class StatusManager {
         // Show temporary success message in status bar
         this.updateStatusBar(`✓ Converted ${inputName}`, `Successfully converted ${inputName} to ${outputDir}/${outputName}`);
 
-        // Show notification with action buttons (if enabled)
-        if (this.configManager.shouldShowSuccessNotifications()) {
+        // Show notification with action buttons (if enabled and not suppressed)
+        if (this.configManager.shouldShowSuccessNotifications() && !suppressNotification) {
             vscode.window.showInformationMessage(
-                `✅ Successfully converted ${inputName} → ${outputName}`,
+                `Successfully converted ${inputName} → ${outputName}`,
                 'Open File',
                 'Open Folder'
             ).then(selection => {

@@ -20,7 +20,7 @@
 - 🔍 **Show in Explorer**: Reveal the file in system file explorer
 
 **Batch Conversion | 批量转换**:
-- 📂 **Open Output Folder**: Open the `kb/` directory with all converted files
+- 📂 **Open Output Folder**: Open the `DocuGenius/` directory with all converted files
 - 📋 **Show Details**: View detailed conversion logs in the output panel
 
 #### ⚙️ **New Configuration Option | 新配置选项**

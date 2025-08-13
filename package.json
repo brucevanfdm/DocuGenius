@@ -49,7 +49,7 @@
       "properties": {
         "documentConverter.autoConvert": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Enable automatic conversion of supported files to Markdown"
         },
         "documentConverter.overwriteExisting": {
@@ -79,40 +79,74 @@
         },
         "documentConverter.markdownSubdirectoryName": {
           "type": "string",
-          "default": "kb",
+          "default": "DocuGenius",
           "description": "Name of the subdirectory where converted Markdown files will be stored"
         },
         "documentConverter.showSuccessNotifications": {
           "type": "boolean",
           "default": true,
           "description": "Show popup notifications when files are successfully converted"
+        },
+        "documentConverter.createProjectConfig": {
+          "type": "boolean",
+          "default": false,
+          "description": "Create .docugenius.json project configuration file (if disabled, uses global settings only)"
+        },
+        "documentConverter.copyTextFiles": {
+          "type": "boolean",
+          "default": false,
+          "description": "Copy plain text files (.txt, .md, .csv, etc.) to the knowledge base folder for unified indexing"
+        },
+        "documentConverter.batchConversionBehavior": {
+          "type": "string",
+          "enum": [
+            "askForEach",
+            "askOnce",
+            "convertAll",
+            "skipAll"
+          ],
+          "default": "askOnce",
+          "description": "How to handle multiple files detected at once",
+          "enumDescriptions": [
+            "Ask for confirmation for each file individually",
+            "Ask once for all files in the batch",
+            "Automatically convert all files without asking",
+            "Skip all files without asking"
+          ]
+        },
+        "documentConverter.batchDetectionWindow": {
+          "type": "number",
+          "default": 3000,
+          "minimum": 1000,
+          "maximum": 10000,
+          "description": "Time window (in milliseconds) to detect batch file operations"
         }
       }
     },
     "commands": [
       {
         "command": "documentConverter.convertFile",
-        "title": "Convert to Markdown",
+        "title": "[DocuGenius]Convert to Markdown",
         "category": "DocuGenius"
       },
       {
         "command": "documentConverter.convertFolder",
-        "title": "Process All Files in Folder",
+        "title": "[DocuGenius]Process All Files in Folder",
         "category": "DocuGenius"
       },
       {
         "command": "documentConverter.enableProject",
-        "title": "Enable for Current Project",
+        "title": "[DocuGenius]Enable for Current Project",
         "category": "DocuGenius"
       },
       {
         "command": "documentConverter.disableProject",
-        "title": "Disable for Current Project",
+        "title": "[DocuGenius]Disable for Current Project",
         "category": "DocuGenius"
       },
       {
         "command": "documentConverter.showProjectStatus",
-        "title": "Show Project Status",
+        "title": "[DocuGenius]Show Project Status",
         "category": "DocuGenius"
       }
     ],
@@ -120,7 +154,7 @@
       "explorer/context": [
         {
           "command": "documentConverter.convertFile",
-          "when": "resourceExtname =~ /\\.(docx|xlsx|pptx|pdf|txt|md|json|xml|html|csv|yaml|sql)$/",
+          "when": "resourceExtname =~ /\\.(docx|xlsx|pptx|pdf|txt|md|json|xml|html|csv|yaml|sql)$/ && resourceFilename != '.docugenius.json'",
           "group": "documentConverter@1"
         },
         {

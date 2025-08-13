@@ -68,7 +68,7 @@ pip --version
 ### Test the Installation | 测试安装
 1. Create a test CSV file with some data
 2. Save it in your workspace
-3. The extension should automatically convert it to Markdown in the `kb/` folder
+3. The extension should automatically convert it to Markdown in the `DocuGenius/` folder
 4. Check the VS Code status bar for conversion progress
 
 ### Configuration | 配置
@@ -109,7 +109,7 @@ chmod +x ~/.vscode/extensions/brucevan.docugenius-*/bin/darwin/docugenius-cli
 You'll know the installation is successful when:
 - DocuGenius appears in your Extensions list
 - Status bar shows DocuGenius activity
-- Test files are automatically converted to the `kb/` folder
+- Test files are automatically converted to the `DocuGenius/` folder
 - Right-click context menu shows "Convert to Markdown" option
 
 ## 🎯 Next Steps | 下一步
@@ -117,7 +117,7 @@ You'll know the installation is successful when:
 After successful installation:
 1. Review the configuration options
 2. Test with different file types
-3. Explore the `kb/` folder organization
+3. Explore the `DocuGenius/` folder organization
 4. Try manual conversion via right-click menu
 
 ---

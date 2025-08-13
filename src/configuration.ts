@@ -70,11 +70,43 @@ export class ConfigurationManager {
     }
 
     /**
+     * Check if project configuration file should be created
+     */
+    shouldCreateProjectConfig(): boolean {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.SECTION);
+        return config.get<boolean>('createProjectConfig', false);
+    }
+
+    /**
+     * Check if plain text files should be copied to knowledge base folder
+     */
+    shouldCopyTextFiles(): boolean {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.SECTION);
+        return config.get<boolean>('copyTextFiles', false);
+    }
+
+    /**
+     * Get batch conversion behavior setting
+     */
+    getBatchConversionBehavior(): 'askForEach' | 'askOnce' | 'convertAll' | 'skipAll' {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.SECTION);
+        return config.get<'askForEach' | 'askOnce' | 'convertAll' | 'skipAll'>('batchConversionBehavior', 'askOnce');
+    }
+
+    /**
+     * Get batch detection window in milliseconds
+     */
+    getBatchDetectionWindow(): number {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.SECTION);
+        return config.get<number>('batchDetectionWindow', 3000);
+    }
+
+    /**
      * Get the name of the subdirectory for converted files
      */
     getMarkdownSubdirectoryName(): string {
         const config = vscode.workspace.getConfiguration(ConfigurationManager.SECTION);
-        return config.get<string>('markdownSubdirectoryName', 'kb');
+        return config.get<string>('markdownSubdirectoryName', 'DocuGenius');
     }
 
     /**

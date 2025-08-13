@@ -18,6 +18,7 @@ export class MarkitdownConverter {
     private context: vscode.ExtensionContext;
     private configManager: ConfigurationManager;
     private statusManager: StatusManager;
+    private isBatchMode: boolean = false;
 
     constructor(context: vscode.ExtensionContext, configManager: ConfigurationManager, statusManager: StatusManager) {
         this.context = context;
@@ -28,7 +29,8 @@ export class MarkitdownConverter {
     /**
      * Process a file (convert or copy based on type)
      */
-    async processFile(filePath: string, forceConvert: boolean = false): Promise<ConversionResult> {
+    async processFile(filePath: string, forceConvert: boolean = false, isBatchMode: boolean = false): Promise<ConversionResult> {
+        this.isBatchMode = isBatchMode;
         // CRITICAL: Prevent infinite loop - never process files in markdown directory
         const markdownSubdirName = this.configManager.getMarkdownSubdirectoryName();
         if (filePath.includes(`/${markdownSubdirName}/`) || filePath.includes(`\\${markdownSubdirName}\\`)) {
@@ -42,9 +44,13 @@ export class MarkitdownConverter {
         if (supportedExtensions.includes(fileExtension)) {
             // Convert document files
             return this.convertFile(filePath, forceConvert);
-        } else {
-            // Copy text-based files
+        } else if (this.configManager.shouldCopyTextFiles()) {
+            // Copy text-based files only if user has enabled this option
             return this.copyFile(filePath, forceConvert);
+        } else {
+            // Skip processing if text file copying is disabled
+            console.log(`Skipping text file (copying disabled): ${filePath}`);
+            return { success: true, outputPath: filePath };
         }
     }
 
@@ -85,13 +91,12 @@ export class MarkitdownConverter {
                     
                     progress.report({ increment: 100 });
                     
-                    // Show success message with action buttons (if enabled)
-                    if (this.configManager.shouldShowSuccessNotifications()) {
+                    // Show success message with action buttons (if enabled and not in batch mode)
+                    if (this.configManager.shouldShowSuccessNotifications() && !this.isBatchMode) {
                         vscode.window.showInformationMessage(
-                            `✅ Successfully converted ${fileName} → ${path.basename(outputPath)}`,
+                            `Successfully converted ${fileName} → ${path.basename(outputPath)}`,
                             'Open File',
-                            'Open Folder',
-                            'Show in Explorer'
+                            'Open Folder'
                         ).then(selection => {
                             if (selection === 'Open File') {
                                 // Open the converted file
@@ -102,9 +107,6 @@ export class MarkitdownConverter {
                                 // Open the containing folder in VS Code
                                 const folderUri = vscode.Uri.file(path.dirname(outputPath));
                                 vscode.commands.executeCommand('vscode.openFolder', folderUri, { forceNewWindow: false });
-                            } else if (selection === 'Show in Explorer') {
-                                // Reveal the file in system explorer
-                                vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outputPath));
                             }
                         });
                     }
@@ -171,7 +173,7 @@ export class MarkitdownConverter {
                         message: `Processing ${path.basename(file)}...`
                     });
 
-                    const result = await this.processFile(file);
+                    const result = await this.processFile(file, false, true); // Enable batch mode
                     results.push(result);
                 }
                 
@@ -184,7 +186,7 @@ export class MarkitdownConverter {
             if (failureCount === 0) {
                 if (this.configManager.shouldShowSuccessNotifications()) {
                     vscode.window.showInformationMessage(
-                        `🎉 Successfully processed ${successCount} files!`,
+                        `Successfully processed ${successCount} files!`,
                         'Open Output Folder',
                         'Show Details'
                     ).then(selection => {
@@ -427,8 +429,8 @@ export class MarkitdownConverter {
             const fileContent = fs.readFileSync(filePath, 'utf8');
             fs.writeFileSync(outputPath, fileContent, 'utf8');
 
-            // Show success message
-            this.statusManager.showConversionSuccess(filePath, outputPath);
+            // Show success message (suppress notification in batch mode)
+            this.statusManager.showConversionSuccess(filePath, outputPath, this.isBatchMode);
             this.statusManager.log(`✓ Copied: ${fileName} → ${path.basename(outputPath)}`);
 
             return { success: true, outputPath };
