@@ -136,7 +136,7 @@ export class ProjectManager {
                 }
             } else {
                 vscode.window.showInformationMessage(
-                    `✅ DocuGenius 已在当前项目启用！文档将自动转换到 "${projectConfig.markdownSubdirectoryName}" 文件夹。`
+                    `✅ DocuGenius 已在当前项目启用！您可以右键文件进行转换，或在设置中开启自动转换。`
                 );
             }
             
@@ -218,7 +218,7 @@ export class ProjectManager {
             '是否要为此项目启用 DocuGenius ？',
             {
                 modal: true,
-                detail: '启用后，DocuGenius 将自动监听文档变化并转换为 "md" 格式，存储在 "DocuGenius" 文件夹中。\n\n您可以随时在设置中禁用此功能。'
+                detail: '启用后，您可以手动转换文档或在设置中开启自动转换功能。\n\n转换后的文件将存储在 "DocuGenius" 文件夹中。'
             },
             '启用',
             '不启用',

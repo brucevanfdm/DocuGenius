@@ -58,12 +58,12 @@ export class StatusManager {
         this.log(`✓ Successfully converted: ${inputName} → ${outputDir}/${outputName}`);
 
         // Show temporary success message in status bar
-        this.updateStatusBar(`✓ Converted ${inputName}`, `Successfully converted ${inputName} to ${outputDir}/${outputName}`);
+        this.updateStatusBar(`✓ Converted ${inputName}`, `Successfully converted ${inputName}`);
 
         // Show notification with action buttons (if enabled and not suppressed)
         if (this.configManager.shouldShowSuccessNotifications() && !suppressNotification) {
             vscode.window.showInformationMessage(
-                `Successfully converted ${inputName} → ${outputName}`,
+                `Successfully converted ${inputName}`,
                 'Open File',
                 'Open Folder'
             ).then(selection => {

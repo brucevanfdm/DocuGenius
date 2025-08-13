@@ -94,7 +94,7 @@ export class MarkitdownConverter {
                     // Show success message with action buttons (if enabled and not in batch mode)
                     if (this.configManager.shouldShowSuccessNotifications() && !this.isBatchMode) {
                         vscode.window.showInformationMessage(
-                            `Successfully converted ${fileName} → ${path.basename(outputPath)}`,
+                            `Successfully converted ${fileName}`,
                             'Open File',
                             'Open Folder'
                         ).then(selection => {
