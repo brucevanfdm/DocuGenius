@@ -19,8 +19,18 @@ Automatically convert Word, Excel, PowerPoint, and PDF files to Markdown in VS C
 
 ### 1. Install | 安装
 
-- Install from VS Code marketplace or load the `.vsix` file
-- 从VS Code市场安装或加载 `.vsix`文件
+**Option 1: Download from GitHub | 从GitHub下载**
+1. Download `docugenius-2.3.0.vsix` from this repository
+2. Open VS Code → Extensions (`Ctrl+Shift+X`) → "..." menu → "Install from VSIX..."
+3. Select the downloaded file
+
+1. 从此仓库下载 `docugenius-2.3.0.vsix` 文件
+2. 打开VS Code → 扩展(`Ctrl+Shift+X`) → "..."菜单 → "从VSIX安装..."
+3. 选择下载的文件
+
+**Option 2: VS Code Marketplace | VS Code市场**
+- Search for "DocuGenius" in VS Code Extensions
+- 在VS Code扩展中搜索"DocuGenius"
 
 ### 2. Setup | 设置
 
