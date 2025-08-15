@@ -4,6 +4,14 @@ Automatically convert Word, Excel, PowerPoint, and PDF files to Markdown in VS C
 
 自动在VS Code中将Word、Excel、PowerPoint和PDF文件转换为Markdown格式。
 
+## 📥 Download | 下载
+
+**🚀 Latest Release | 最新版本**: [DocuGenius v2.3.0](https://github.com/brucevanfdm/project-plugin/releases/latest)
+
+[![Download VSIX](https://img.shields.io/badge/Download-VSIX%20Package-blue?style=for-the-badge&logo=visual-studio-code)](https://github.com/brucevanfdm/project-plugin/releases/download/v2.3.0/docugenius-2.3.0.vsix)
+
+**直接下载**: [docugenius-2.3.0.vsix](https://github.com/brucevanfdm/project-plugin/releases/download/v2.3.0/docugenius-2.3.0.vsix)
+
 ## ✨ What It Does | 功能
 
 - **📄 Converts Documents**: Word (.docx), Excel (.xlsx), PowerPoint (.pptx), PDF (.pdf) → Markdown
