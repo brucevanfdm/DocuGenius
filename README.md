@@ -6,11 +6,11 @@ Automatically convert Word, Excel, PowerPoint, and PDF files to Markdown in VS C
 
 ## 📥 Download | 下载
 
-**🚀 Latest Release | 最新版本**: [DocuGenius v2.3.0](https://github.com/brucevanfdm/project-plugin/releases/latest)
+[![Download Latest Release](https://img.shields.io/badge/Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/brucevanfdm/project-plugin/releases/latest)
 
-[![Download VSIX](https://img.shields.io/badge/Download-VSIX%20Package-blue?style=for-the-badge&logo=visual-studio-code)](https://github.com/brucevanfdm/project-plugin/releases/download/v2.3.0/docugenius-2.3.0.vsix)
+**🚀 Get DocuGenius**: [GitHub Releases](https://github.com/brucevanfdm/project-plugin/releases/latest)
 
-**直接下载**: [docugenius-2.3.0.vsix](https://github.com/brucevanfdm/project-plugin/releases/download/v2.3.0/docugenius-2.3.0.vsix)
+**获取DocuGenius**: [GitHub发布页面](https://github.com/brucevanfdm/project-plugin/releases/latest)
 
 ## ✨ What It Does | 功能
 
@@ -27,18 +27,13 @@ Automatically convert Word, Excel, PowerPoint, and PDF files to Markdown in VS C
 
 ### 1. Install | 安装
 
-**Option 1: Download from GitHub | 从GitHub下载**
-1. Download `docugenius-2.3.0.vsix` from this repository
-2. Open VS Code → Extensions (`Ctrl+Shift+X`) → "..." menu → "Install from VSIX..."
-3. Select the downloaded file
+1. **Download**: Go to [GitHub Releases](https://github.com/brucevanfdm/project-plugin/releases/latest) and download `docugenius-2.3.0.vsix`
+2. **Install**: Open VS Code → Extensions (`Ctrl+Shift+X`) → "..." menu → "Install from VSIX..."
+3. **Select**: Choose the downloaded `.vsix` file
 
-1. 从此仓库下载 `docugenius-2.3.0.vsix` 文件
-2. 打开VS Code → 扩展(`Ctrl+Shift+X`) → "..."菜单 → "从VSIX安装..."
-3. 选择下载的文件
-
-**Option 2: VS Code Marketplace | VS Code市场**
-- Search for "DocuGenius" in VS Code Extensions
-- 在VS Code扩展中搜索"DocuGenius"
+1. **下载**：访问 [GitHub发布页面](https://github.com/brucevanfdm/project-plugin/releases/latest) 下载 `docugenius-2.3.0.vsix`
+2. **安装**：打开VS Code → 扩展(`Ctrl+Shift+X`) → "..."菜单 → "从VSIX安装..."
+3. **选择**：选择下载的 `.vsix` 文件
 
 ### 2. Setup | 设置
 

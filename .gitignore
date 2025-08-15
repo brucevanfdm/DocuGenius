@@ -2,10 +2,7 @@ out
 dist
 node_modules
 .vscode-test/
-# Ignore all vsix files except release versions
 *.vsix
-# Allow release versions
-!docugenius-*.vsix
 .DS_Store
 *.log
 .env
