@@ -4,6 +4,7 @@ import { MarkitdownConverter } from './converter';
 import { ConfigurationManager } from './configuration';
 import { StatusManager } from './statusManager';
 import { ProjectManager } from './projectManager';
+import { I18nManager, getMessage, getStatusText } from './i18n';
 
 let fileWatcher: FileWatcher | undefined;
 let statusManager: StatusManager | undefined;
@@ -11,6 +12,9 @@ let projectManager: ProjectManager | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('DocuGenius is now active!');
+
+    // Initialize i18n manager
+    I18nManager.getInstance(context.extensionPath);
 
     // Initialize project manager
     projectManager = new ProjectManager();
@@ -126,17 +130,20 @@ export function activate(context: vscode.ExtensionContext) {
         
         const isEnabled = projectManager.isProjectEnabled();
         const configPath = projectManager.getConfigFilePath();
-        
+
+        const statusText = isEnabled ? getMessage('projectStatus.enabled') : getMessage('projectStatus.disabled');
+        const configText = configPath || getMessage('projectStatus.notExists');
+
         vscode.window.showInformationMessage(
-            `项目状态: ${isEnabled ? '已启用' : '未启用'}\n配置文件: ${configPath || '不存在'}`,
-            isEnabled ? '禁用项目' : '启用项目',
-            '打开配置文件'
+            getMessage('projectStatus.info', statusText, configText),
+            isEnabled ? getMessage('disableProject') : getMessage('enableProject'),
+            getMessage('openConfigFile')
         ).then(choice => {
-            if (choice === '启用项目') {
+            if (choice === getMessage('enableProject')) {
                 vscode.commands.executeCommand('documentConverter.enableProject');
-            } else if (choice === '禁用项目') {
+            } else if (choice === getMessage('disableProject')) {
                 vscode.commands.executeCommand('documentConverter.disableProject');
-            } else if (choice === '打开配置文件' && configPath) {
+            } else if (choice === getMessage('openConfigFile') && configPath) {
                 vscode.workspace.openTextDocument(configPath).then(doc => {
                     vscode.window.showTextDocument(doc);
                 });
@@ -159,10 +166,9 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(fileWatcher);
     }
 
-    // Show activation message and update status
-    statusManager.updateStatusBar('Ready');
+    // Update status
+    statusManager.updateStatusBar(getStatusText('ready'));
     statusManager.showWatcherStatus(configManager.isAutoConvertEnabled(), configManager.getSupportedExtensions());
-    vscode.window.showInformationMessage('DocuGenius is ready!');
 }
 
 export function deactivate() {

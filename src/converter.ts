@@ -562,9 +562,124 @@ export class MarkitdownConverter {
     }
 
     /**
-     * Update image processing to work with new directory structure
+     * Enhanced image processing with actual image extraction
      */
     private async processImages(originalFilePath: string, markdownContent: string): Promise<string> {
+        try {
+            const originalDir = path.dirname(originalFilePath);
+            const originalBaseName = path.parse(path.basename(originalFilePath)).name;
+            const fileExtension = path.extname(originalFilePath).toLowerCase();
+
+            // Check if image extraction is enabled
+            if (!this.configManager.shouldExtractImages()) {
+                // If image extraction is disabled, just process existing image references
+                return this.processExistingImageReferences(originalFilePath, markdownContent);
+            }
+
+            // Only extract images from supported document types
+            if (!['.pdf', '.docx', '.pptx', '.xlsx'].includes(fileExtension)) {
+                // For other files, just process existing image references
+                return this.processExistingImageReferences(originalFilePath, markdownContent);
+            }
+
+            // Try to extract images using the image extractor
+            let extractedImages: any[] = [];
+            let imageExtractionResult: any = null;
+
+            try {
+                imageExtractionResult = await this.extractImagesFromDocument(originalFilePath);
+                if (imageExtractionResult && imageExtractionResult.success) {
+                    extractedImages = imageExtractionResult.images || [];
+                }
+            } catch (error) {
+                console.warn(`Warning: Image extraction failed for ${originalFilePath}:`, error);
+                // Continue with processing existing references
+            }
+
+            // Check if we have intelligent extraction result with full content
+            if (imageExtractionResult && imageExtractionResult.success && imageExtractionResult.markdown_content) {
+                // Use the intelligent extraction result that has images in original positions
+                let intelligentContent = imageExtractionResult.markdown_content;
+
+                // Process any existing image references in the intelligent content
+                intelligentContent = await this.processExistingImageReferences(originalFilePath, intelligentContent);
+
+                return intelligentContent;
+            } else {
+                // Fallback to traditional processing
+                let processedContent = await this.processExistingImageReferences(originalFilePath, markdownContent);
+
+                // Add extracted images to markdown content if any were found
+                if (extractedImages.length > 0) {
+                    processedContent += this.generateImageMarkdown(extractedImages);
+
+                    // Add metadata comment
+                    processedContent += `\n\n<!-- Images extracted: ${extractedImages.length} images saved to ${imageExtractionResult.output_dir} -->\n`;
+                }
+
+                return processedContent;
+            }
+
+        } catch (error) {
+            console.warn(`Warning: Could not process images for ${originalFilePath}:`, error);
+            return markdownContent; // Return original content if image processing fails
+        }
+    }
+
+    /**
+     * Extract images from document using the Python image extractor
+     */
+    private async extractImagesFromDocument(filePath: string): Promise<any> {
+        try {
+            const platform = process.platform;
+            const imageExtractorPath = this.context.asAbsolutePath(`bin/${platform}/image_extractor.py`);
+
+            // Check if image extractor exists
+            if (!fs.existsSync(imageExtractorPath)) {
+                console.warn(`Image extractor not found at: ${imageExtractorPath}`);
+                return null;
+            }
+
+            // Determine output directory based on configuration
+            const originalDir = path.dirname(filePath);
+            const imageOutputFolder = this.configManager.getImageOutputFolder();
+            let outputDir: string;
+            let markdownDir: string;
+
+            if (this.configManager.shouldOrganizeInSubdirectory()) {
+                const subdirName = this.configManager.getMarkdownSubdirectoryName();
+                markdownDir = path.join(originalDir, subdirName);
+                outputDir = path.join(markdownDir, imageOutputFolder);
+            } else {
+                markdownDir = originalDir;
+                outputDir = path.join(originalDir, imageOutputFolder);
+            }
+
+            // Get minimum image size from configuration
+            const minImageSize = this.configManager.getImageMinSize();
+
+            // Call the intelligent image extractor with full content extraction
+            const command = `python "${imageExtractorPath}" "${filePath}" "${outputDir}" "${outputDir}" full_content ${minImageSize}`;
+            const { stdout, stderr } = await execAsync(command);
+
+            if (stderr && !stdout) {
+                throw new Error(`Image extractor error: ${stderr}`);
+            }
+
+            // Parse JSON result
+            const result = JSON.parse(stdout);
+            return result;
+
+        } catch (error) {
+            console.warn(`Warning: Failed to extract images from ${filePath}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Process existing image references in markdown content (legacy functionality)
+     */
+    private async processExistingImageReferences(originalFilePath: string, markdownContent: string): Promise<string> {
         try {
             const originalDir = path.dirname(originalFilePath);
             const originalBaseName = path.parse(path.basename(originalFilePath)).name;
@@ -615,8 +730,33 @@ export class MarkitdownConverter {
             return processedContent;
 
         } catch (error) {
-            console.warn(`Warning: Could not process images for ${originalFilePath}:`, error);
-            return markdownContent; // Return original content if image processing fails
+            console.warn(`Warning: Could not process existing image references for ${originalFilePath}:`, error);
+            return markdownContent;
         }
+    }
+
+    /**
+     * Generate markdown content for extracted images
+     */
+    private generateImageMarkdown(images: any[]): string {
+        if (!images || images.length === 0) {
+            return "";
+        }
+
+        let markdown = "\n\n## Extracted Images\n\n";
+
+        for (const img of images) {
+            let altText = "Extracted image";
+            if (img.page) {
+                altText += ` from page ${img.page}`;
+            } else if (img.slide) {
+                altText += ` from slide ${img.slide}`;
+            }
+
+            // Use relative path for markdown
+            markdown += `![${altText}](${img.relative_path})\n\n`;
+        }
+
+        return markdown;
     }
 }

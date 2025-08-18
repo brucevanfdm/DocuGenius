@@ -46,13 +46,21 @@ if /i "%FILE_EXT%"==".pptx" (
     )
 )
 if /i "%FILE_EXT%"==".pdf" (
-    python -c "import pdfplumber" >nul 2>&1
+    REM Try PyMuPDF first for better image extraction
+    python -c "import fitz" >nul 2>&1
     if errorlevel 1 (
-        pip install --user pdfplumber >nul 2>&1
+        pip install --user PyMuPDF >nul 2>&1
         if errorlevel 1 (
-            python -c "import PyPDF2" >nul 2>&1
+            REM Fallback to pdfplumber
+            python -c "import pdfplumber" >nul 2>&1
             if errorlevel 1 (
-                pip install --user PyPDF2 >nul 2>&1
+                pip install --user pdfplumber >nul 2>&1
+                if errorlevel 1 (
+                    python -c "import PyPDF2" >nul 2>&1
+                    if errorlevel 1 (
+                        pip install --user PyPDF2 >nul 2>&1
+                    )
+                )
             )
         )
     )
@@ -60,16 +68,23 @@ if /i "%FILE_EXT%"==".pdf" (
 
 REM Check if file argument is provided
 if "%~1"=="" (
-    echo DocuGenius CLI - Document to Markdown Converter
+    echo DocuGenius CLI - Document to Markdown Converter with Image Extraction
     echo Usage: docugenius-cli ^<file^>
     echo.
     echo Supported formats:
     echo   - Text files: .txt, .md, .markdown
     echo   - Data files: .json, .csv, .xml, .html
-    echo   - Documents: .docx, .xlsx, .pptx, .pdf
+    echo   - Documents: .docx, .xlsx, .pptx, .pdf ^(with image extraction^)
     echo.
-    echo Note: For document conversion, you may need to install:
-    echo   pip install python-docx python-pptx openpyxl PyPDF2
+    echo Features:
+    echo   - Converts documents to Markdown format
+    echo   - Extracts images from PDF, DOCX, and PPTX files
+    echo   - Organizes images in structured folders
+    echo   - Maintains image quality and proper references
+    echo.
+    echo Note: For optimal functionality, install:
+    echo   pip install python-docx python-pptx openpyxl PyMuPDF
+    echo   ^(PyMuPDF provides better PDF image extraction^)
     exit /b 1
 )
 

@@ -1,7 +1,7 @@
 {
   "name": "docugenius",
-  "displayName": "DocuGenius",
-  "description": "Intelligent document converter that transforms Word, Excel, PowerPoint, and PDF files to Markdown with built-in conversion engine",
+  "displayName": "%extension.displayName%",
+  "description": "%extension.description%",
   "version": "2.3.0",
   "publisher": "brucevan",
   "author": {
@@ -45,22 +45,58 @@
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "title": "DocuGenius",
+      "title": "%config.title%",
       "properties": {
         "documentConverter.autoConvert": {
           "type": "boolean",
           "default": false,
-          "description": "Enable automatic conversion of supported files to Markdown"
+          "description": "%config.autoConvert.description%"
         },
         "documentConverter.overwriteExisting": {
           "type": "boolean",
           "default": true,
-          "description": "Overwrite existing .md files if source file is newer"
+          "description": "%config.overwriteExisting.description%"
         },
         "documentConverter.extractImages": {
           "type": "boolean",
           "default": true,
-          "description": "Extract images from documents to separate assets folder"
+          "description": "%config.extractImages.description%"
+        },
+        "documentConverter.imageMinSize": {
+          "type": "number",
+          "default": 100,
+          "description": "%config.imageMinSize.description%"
+        },
+        "documentConverter.imageFormats": {
+          "type": "array",
+          "default": [
+            "png",
+            "jpg",
+            "jpeg",
+            "gif",
+            "bmp"
+          ],
+          "description": "%config.imageFormats.description%"
+        },
+        "documentConverter.imageNamingConvention": {
+          "type": "string",
+          "enum": [
+            "sequential",
+            "descriptive",
+            "page_based"
+          ],
+          "default": "descriptive",
+          "description": "%config.imageNamingConvention.description%",
+          "enumDescriptions": [
+            "%config.imageNamingConvention.sequential%",
+            "%config.imageNamingConvention.descriptive%",
+            "%config.imageNamingConvention.pageBased%"
+          ]
+        },
+        "documentConverter.imageOutputFolder": {
+          "type": "string",
+          "default": "images",
+          "description": "%config.imageOutputFolder.description%"
         },
         "documentConverter.supportedExtensions": {
           "type": "array",
@@ -70,32 +106,32 @@
             ".pptx",
             ".pdf"
           ],
-          "description": "File extensions to monitor for automatic conversion"
+          "description": "%config.supportedExtensions.description%"
         },
         "documentConverter.organizeInSubdirectory": {
           "type": "boolean",
           "default": true,
-          "description": "Organize converted Markdown files in a subdirectory to separate them from source files"
+          "description": "%config.organizeInSubdirectory.description%"
         },
         "documentConverter.markdownSubdirectoryName": {
           "type": "string",
           "default": "DocuGenius",
-          "description": "Name of the subdirectory where converted Markdown files will be stored"
+          "description": "%config.markdownSubdirectoryName.description%"
         },
         "documentConverter.showSuccessNotifications": {
           "type": "boolean",
           "default": true,
-          "description": "Show popup notifications when files are successfully converted"
+          "description": "%config.showSuccessNotifications.description%"
         },
         "documentConverter.createProjectConfig": {
           "type": "boolean",
           "default": false,
-          "description": "Create .docugenius.json project configuration file (if disabled, uses global settings only)"
+          "description": "%config.createProjectConfig.description%"
         },
         "documentConverter.copyTextFiles": {
           "type": "boolean",
           "default": false,
-          "description": "Copy plain text files (.txt, .md, .csv, etc.) to the knowledge base folder for unified indexing"
+          "description": "%config.copyTextFiles.description%"
         },
         "documentConverter.batchConversionBehavior": {
           "type": "string",
@@ -106,12 +142,12 @@
             "skipAll"
           ],
           "default": "askOnce",
-          "description": "How to handle multiple files detected at once",
+          "description": "%config.batchConversionBehavior.description%",
           "enumDescriptions": [
-            "Ask for confirmation for each file individually",
-            "Ask once for all files in the batch",
-            "Automatically convert all files without asking",
-            "Skip all files without asking"
+            "%config.batchConversionBehavior.askForEach%",
+            "%config.batchConversionBehavior.askOnce%",
+            "%config.batchConversionBehavior.convertAll%",
+            "%config.batchConversionBehavior.skipAll%"
           ]
         },
         "documentConverter.batchDetectionWindow": {
@@ -119,34 +155,34 @@
           "default": 3000,
           "minimum": 1000,
           "maximum": 10000,
-          "description": "Time window (in milliseconds) to detect batch file operations"
+          "description": "%config.batchDetectionWindow.description%"
         }
       }
     },
     "commands": [
       {
         "command": "documentConverter.convertFile",
-        "title": "[DocuGenius]Convert to Markdown",
+        "title": "%command.convertFile.title%",
         "category": "DocuGenius"
       },
       {
         "command": "documentConverter.convertFolder",
-        "title": "[DocuGenius]Process All Files in Folder",
+        "title": "%command.convertFolder.title%",
         "category": "DocuGenius"
       },
       {
         "command": "documentConverter.enableProject",
-        "title": "[DocuGenius]Enable for Current Project",
+        "title": "%command.enableProject.title%",
         "category": "DocuGenius"
       },
       {
         "command": "documentConverter.disableProject",
-        "title": "[DocuGenius]Disable for Current Project",
+        "title": "%command.disableProject.title%",
         "category": "DocuGenius"
       },
       {
         "command": "documentConverter.showProjectStatus",
-        "title": "[DocuGenius]Show Project Status",
+        "title": "%command.showProjectStatus.title%",
         "category": "DocuGenius"
       }
     ],

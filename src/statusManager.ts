@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ConfigurationManager } from './configuration';
+import { localize } from './i18n';
 
 export class StatusManager {
     private statusBarItem: vscode.StatusBarItem;
@@ -23,7 +24,7 @@ export class StatusManager {
             this.outputChannel.show();
         });
         
-        this.updateStatusBar('Ready');
+        this.updateStatusBar(localize('status.ready'));
     }
 
     /**
@@ -31,7 +32,7 @@ export class StatusManager {
      */
     updateStatusBar(status: string, tooltip?: string): void {
         this.statusBarItem.text = `$(markdown) ${status}`;
-        this.statusBarItem.tooltip = tooltip || `DocuGenius: ${status}`;
+        this.statusBarItem.tooltip = tooltip || localize('tooltip.ready', status);
         this.statusBarItem.show();
     }
 
@@ -39,11 +40,12 @@ export class StatusManager {
      * Show conversion in progress
      */
     showConversionInProgress(fileName: string): void {
+        const name = this.getFileName(fileName);
         this.updateStatusBar(
-            `Converting ${fileName}...`,
-            `Converting ${fileName} to Markdown`
+            localize('status.converting', name),
+            localize('tooltip.converting', name)
         );
-        this.log(`Starting conversion: ${fileName}`);
+        this.log(localize('log.conversionStart', fileName));
     }
 
     /**
@@ -54,25 +56,28 @@ export class StatusManager {
         const outputName = this.getFileName(outputFile);
         const outputDir = this.getDirectoryName(outputFile);
 
-        this.updateStatusBar('Ready');
-        this.log(`✓ Successfully converted: ${inputName} → ${outputDir}/${outputName}`);
+        this.updateStatusBar(localize('status.ready'));
+        this.log(localize('log.conversionSuccess', inputName, outputDir, outputName));
 
         // Show temporary success message in status bar
-        this.updateStatusBar(`✓ Converted ${inputName}`, `Successfully converted ${inputName}`);
+        this.updateStatusBar(
+            localize('status.converted', inputName),
+            localize('tooltip.converted', inputName)
+        );
 
         // Show notification with action buttons (if enabled and not suppressed)
         if (this.configManager.shouldShowSuccessNotifications() && !suppressNotification) {
             vscode.window.showInformationMessage(
-                `Successfully converted ${inputName}`,
-                'Open File',
-                'Open Folder'
+                localize('notification.conversionSuccess', inputName),
+                localize('notification.openFile'),
+                localize('notification.openFolder')
             ).then(selection => {
-                if (selection === 'Open File') {
+                if (selection === localize('notification.openFile')) {
                     // Open the converted file
                     vscode.workspace.openTextDocument(outputFile).then(doc => {
                         vscode.window.showTextDocument(doc);
                     });
-                } else if (selection === 'Open Folder') {
+                } else if (selection === localize('notification.openFolder')) {
                     // Reveal the file in explorer
                     vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outputFile));
                 }
@@ -81,7 +86,7 @@ export class StatusManager {
 
         // Reset status bar after 5 seconds (increased from 3 seconds)
         setTimeout(() => {
-            this.updateStatusBar('Ready');
+            this.updateStatusBar(localize('status.ready'));
         }, 5000);
     }
 
@@ -90,16 +95,19 @@ export class StatusManager {
      */
     showConversionError(fileName: string, error: string): void {
         const name = this.getFileName(fileName);
-        
-        this.updateStatusBar('Ready');
-        this.log(`✗ Failed to convert: ${name} - ${error}`, true);
-        
+
+        this.updateStatusBar(localize('status.ready'));
+        this.log(localize('log.conversionError', name, error), true);
+
         // Show temporary error message in status bar
-        this.updateStatusBar(`✗ Failed: ${name}`, `Failed to convert ${name}: ${error}`);
-        
+        this.updateStatusBar(
+            localize('status.failed', name),
+            localize('tooltip.failed', name, error)
+        );
+
         // Reset status bar after 5 seconds
         setTimeout(() => {
-            this.updateStatusBar('Ready');
+            this.updateStatusBar(localize('status.ready'));
         }, 5000);
     }
 
@@ -108,14 +116,14 @@ export class StatusManager {
      */
     showBatchProgress(current: number, total: number, currentFile?: string): void {
         const progress = `${current}/${total}`;
-        const status = currentFile 
-            ? `Converting ${progress}: ${this.getFileName(currentFile)}...`
-            : `Converting ${progress}...`;
-            
-        this.updateStatusBar(status, `Batch conversion progress: ${progress}`);
-        
+        const status = currentFile
+            ? localize('status.batchProgressWithFile', current, total, this.getFileName(currentFile))
+            : localize('status.batchProgress', current, total);
+
+        this.updateStatusBar(status, localize('tooltip.batchProgress', progress));
+
         if (currentFile) {
-            this.log(`Converting (${progress}): ${this.getFileName(currentFile)}`);
+            this.log(localize('log.batchProgress', progress, this.getFileName(currentFile)));
         }
     }
 
@@ -124,21 +132,24 @@ export class StatusManager {
      */
     showBatchComplete(successCount: number, totalCount: number): void {
         const failureCount = totalCount - successCount;
-        
+
         if (failureCount === 0) {
-            this.log(`✓ Batch conversion complete: ${successCount} files converted successfully`);
-            this.updateStatusBar(`✓ Converted ${successCount} files`, `Successfully converted ${successCount} files`);
-        } else {
-            this.log(`⚠ Batch conversion complete: ${successCount} succeeded, ${failureCount} failed`);
+            this.log(localize('log.batchComplete', successCount));
             this.updateStatusBar(
-                `⚠ ${successCount}/${totalCount} converted`, 
-                `Batch conversion: ${successCount} succeeded, ${failureCount} failed`
+                localize('status.batchComplete', successCount),
+                localize('tooltip.batchComplete', successCount)
+            );
+        } else {
+            this.log(localize('log.batchPartial', successCount, failureCount));
+            this.updateStatusBar(
+                localize('status.batchPartial', successCount, totalCount),
+                localize('tooltip.batchPartial', successCount, failureCount)
             );
         }
-        
+
         // Reset status bar after 5 seconds
         setTimeout(() => {
-            this.updateStatusBar('Ready');
+            this.updateStatusBar(localize('status.ready'));
         }, 5000);
     }
 
@@ -146,12 +157,15 @@ export class StatusManager {
      * Show configuration change
      */
     showConfigurationChange(setting: string, value: any): void {
-        this.log(`Configuration changed: ${setting} = ${value}`);
-        this.updateStatusBar('Config updated', `Configuration updated: ${setting}`);
-        
+        this.log(localize('log.configChange', setting, value));
+        this.updateStatusBar(
+            localize('status.configUpdated'),
+            localize('tooltip.configUpdated', setting)
+        );
+
         // Reset status bar after 2 seconds
         setTimeout(() => {
-            this.updateStatusBar('Ready');
+            this.updateStatusBar(localize('status.ready'));
         }, 2000);
     }
 
@@ -160,16 +174,22 @@ export class StatusManager {
      */
     showWatcherStatus(enabled: boolean, extensions: string[]): void {
         if (enabled) {
-            this.log(`File watcher enabled for extensions: ${extensions.join(', ')}`);
-            this.updateStatusBar('Watching', `Auto-conversion enabled for: ${extensions.join(', ')}`);
+            this.log(localize('log.watcherEnabled', extensions.join(', ')));
+            this.updateStatusBar(
+                localize('status.watching'),
+                localize('tooltip.watching', extensions.join(', '))
+            );
         } else {
-            this.log('File watcher disabled');
-            this.updateStatusBar('Not watching', 'Auto-conversion is disabled');
+            this.log(localize('log.watcherDisabled'));
+            this.updateStatusBar(
+                localize('status.notWatching'),
+                localize('tooltip.notWatching')
+            );
         }
 
         // Reset status bar after 3 seconds
         setTimeout(() => {
-            this.updateStatusBar('Ready');
+            this.updateStatusBar(localize('status.ready'));
         }, 3000);
     }
 
@@ -177,14 +197,18 @@ export class StatusManager {
      * Show file skipped message
      */
     showFileSkipped(fileName: string, reason: string): void {
-        this.log(`⏭ Skipped ${fileName}: ${reason}`);
+        const name = this.getFileName(fileName);
+        this.log(localize('log.fileSkipped', fileName, reason));
 
         // Show temporary skip message in status bar
-        this.updateStatusBar(`⏭ Skipped ${fileName}`, `Skipped ${fileName}: ${reason}`);
+        this.updateStatusBar(
+            localize('status.skipped', name),
+            localize('tooltip.skipped', name, reason)
+        );
 
         // Reset status bar after 2 seconds
         setTimeout(() => {
-            this.updateStatusBar('Ready');
+            this.updateStatusBar(localize('status.ready'));
         }, 2000);
     }
 

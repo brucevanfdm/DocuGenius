@@ -17,11 +17,11 @@ Automatically convert Word, Excel, PowerPoint, and PDF files to Markdown in VS C
 - **📄 Converts Documents**: Word (.docx), Excel (.xlsx), PowerPoint (.pptx), PDF (.pdf) → Markdown
 - **📁 Organizes Everything**: Creates a `DocuGenius/` folder with all converted files for easy searching
 - **🔄 Stays Updated**: Automatically re-converts when you modify source files
-- **🖼️ Handles Images**: Extracts images from documents into organized asset folders
+- **🖼️ Advanced Image Extraction**: Automatically extracts images from PDF, DOCX, and PPTX files with smart organization
 - **文档转换**：Word (.docx)、Excel (.xlsx)、PowerPoint (.pptx)、PDF (.pdf) → Markdown
 - **统一管理**：创建 `DocuGenius/` 文件夹，便于搜索所有转换文件
 - **自动更新**：源文件修改时自动重新转换
-- **图片处理**：提取文档中的图片到整理好的资源文件夹
+- **智能图片提取**：自动从 PDF、DOCX、PPTX 文件中提取图片并智能组织
 
 ## 🚀 Quick Start | 快速开始
 
@@ -118,6 +118,67 @@ Access via `Ctrl+,` (Windows) or `Cmd+,` (Mac), then search "DocuGenius":
 ### Advanced Settings | 高级设置
 - **Supported Extensions | 支持扩展**: File types to monitor (default: .docx, .xlsx, .pptx, .pdf)
 - **Copy Text Files | 复制文本**: Include text files in knowledge base (default: off)
+
+### Image Extraction Settings | 图片提取设置
+- **Image Min Size | 最小图片尺寸**: Minimum image size to extract (default: 50px)
+- **Image Formats | 图片格式**: Supported formats (PNG, JPG, GIF, BMP)
+- **Naming Convention | 命名规则**: How to name extracted images (page_based, sequential, descriptive)
+- **Output Folder | 输出文件夹**: Folder name for images (default: "images")
+
+## 🖼️ Image Extraction Features | 图片提取功能
+
+DocuGenius automatically extracts images from your documents and organizes them intelligently:
+
+DocuGenius 自动从文档中提取图片并智能组织：
+
+### Supported Document Types | 支持的文档类型
+- **PDF Files**: Uses PyMuPDF for high-quality extraction with fallback to pdfplumber
+- **Word Documents (.docx)**: Extracts embedded images from document relationships
+- **PowerPoint (.pptx)**: Extracts images from slides and shapes
+
+**PDF 文件**：使用 PyMuPDF 进行高质量提取，回退到 pdfplumber
+**Word 文档 (.docx)**：从文档关系中提取嵌入图片
+**PowerPoint (.pptx)**：从幻灯片和形状中提取图片
+
+### Smart Organization | 智能组织
+```
+DocuGenius/
+├── document.md
+└── images/
+    └── document/                   # Organized by document name
+        ├── page_1_img_1.png       # Page-based naming
+        ├── page_1_img_2.jpg
+        ├── page_2_img_1.png
+        └── slide_3_img_1.gif
+```
+
+### Image Quality & Formats | 图片质量与格式
+- **High Quality**: Maintains original image quality during extraction
+- **Multiple Formats**: Supports PNG, JPEG, GIF, BMP formats
+- **Smart Filtering**: Skips decorative images smaller than configured threshold
+- **Collision-Free**: Automatic filename collision detection and resolution
+
+**高质量**：提取过程中保持原始图片质量
+**多种格式**：支持 PNG、JPEG、GIF、BMP 格式
+**智能过滤**：跳过小于配置阈值的装饰性图片
+**无冲突**：自动检测和解决文件名冲突
+
+### Markdown Integration | Markdown 集成
+Extracted images are automatically referenced in the generated Markdown:
+
+提取的图片自动在生成的 Markdown 中引用：
+
+```markdown
+# Document Title
+
+## Extracted Images
+
+![Image from pdf (Page 1)](images/document/page_1_img_1.png)
+
+![Image from pptx (Slide 2)](images/document/slide_2_img_1.jpg)
+
+<!-- Images extracted: 5 images saved to DocuGenius/images/document -->
+```
 - **Show Notifications | 显示通知**: Popup when conversion completes (default: on)
 - **Project Config | 项目配置**: Create .docugenius.json files (default: off)
 - **Batch Behavior | 批量行为**: How to handle multiple files (default: ask once)
@@ -135,6 +196,35 @@ Watch the bottom status bar for conversion progress:
 
 Click the status to see detailed logs | 点击状态查看详细日志
 
+## 📦 Installation Requirements | 安装要求
+
+### For Basic Document Conversion | 基本文档转换
+- **Windows**: Python 3.6+ with basic libraries (auto-installed)
+- **macOS/Linux**: Built-in binary (no additional requirements)
+
+**Windows**：Python 3.6+ 及基础库（自动安装）
+**macOS/Linux**：内置二进制文件（无额外要求）
+
+### For Enhanced Image Extraction | 增强图片提取
+For optimal image extraction quality, install these Python packages:
+
+为获得最佳图片提取质量，请安装这些 Python 包：
+
+```bash
+# Recommended for best PDF image extraction
+pip install PyMuPDF
+
+# Alternative PDF libraries (fallback)
+pip install pdfplumber PyPDF2
+
+# Document libraries (auto-installed by CLI)
+pip install python-docx python-pptx openpyxl
+```
+
+**Note**: The extension works without these packages but with limited image extraction capabilities.
+
+**注意**：扩展在没有这些包的情况下也能工作，但图片提取功能有限。
+
 ## 🔧 Troubleshooting | 故障排除
 
 **Conversion not working?** | **转换不工作？**
@@ -145,3 +235,12 @@ Click the status to see detailed logs | 点击状态查看详细日志
 4. 检查输出面板：`查看 → 输出 → DocuGenius`
 5. 确保已安装Python（仅Windows）
 6. 尝试手动转换：右键文件 → "Convert to Markdown"
+
+**Image extraction not working?** | **图片提取不工作？**
+
+1. Install PyMuPDF for better PDF image extraction: `pip install PyMuPDF`
+2. Check that image extraction is enabled in settings
+3. Verify document contains extractable images (not just text)
+4. 安装 PyMuPDF 以获得更好的 PDF 图片提取：`pip install PyMuPDF`
+5. 检查设置中是否启用了图片提取
+6. 验证文档包含可提取的图片（不仅仅是文本）

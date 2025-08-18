@@ -46,6 +46,38 @@ export class ConfigurationManager {
     }
 
     /**
+     * Get minimum image size for extraction
+     */
+    getImageMinSize(): number {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.SECTION);
+        return config.get<number>('imageMinSize', 100);
+    }
+
+    /**
+     * Get supported image formats
+     */
+    getImageFormats(): string[] {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.SECTION);
+        return config.get<string[]>('imageFormats', ['png', 'jpg', 'jpeg', 'gif', 'bmp']);
+    }
+
+    /**
+     * Get image naming convention
+     */
+    getImageNamingConvention(): string {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.SECTION);
+        return config.get<string>('imageNamingConvention', 'page_based');
+    }
+
+    /**
+     * Get image output folder name
+     */
+    getImageOutputFolder(): string {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.SECTION);
+        return config.get<string>('imageOutputFolder', 'images');
+    }
+
+    /**
      * Get supported file extensions
      */
     getSupportedExtensions(): string[] {
@@ -125,12 +157,20 @@ export class ConfigurationManager {
         overwriteExisting: boolean;
         extractImages: boolean;
         supportedExtensions: string[];
+        imageMinSize: number;
+        imageFormats: string[];
+        imageNamingConvention: string;
+        imageOutputFolder: string;
     } {
         return {
             autoConvert: this.isAutoConvertEnabled(),
             overwriteExisting: this.shouldOverwriteExisting(),
             extractImages: this.shouldExtractImages(),
-            supportedExtensions: this.getSupportedExtensions()
+            supportedExtensions: this.getSupportedExtensions(),
+            imageMinSize: this.getImageMinSize(),
+            imageFormats: this.getImageFormats(),
+            imageNamingConvention: this.getImageNamingConvention(),
+            imageOutputFolder: this.getImageOutputFolder()
         };
     }
 
