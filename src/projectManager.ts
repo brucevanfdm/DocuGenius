@@ -129,11 +129,14 @@ export class ProjectManager {
                     '立即转换',
                     '稍后手动转换'
                 );
-                
+
                 if (choice === '立即转换') {
                     // 触发文件夹转换命令
                     vscode.commands.executeCommand('documentConverter.convertFolder', vscode.Uri.file(rootPath));
                 }
+            } else if (!showConvertPrompt) {
+                // 当 showConvertPrompt 为 false 时，不显示任何消息，由调用方处理
+                // 这避免了重复的消息提示
             } else {
                 vscode.window.showInformationMessage(
                     `✅ DocuGenius 已在当前项目启用！您可以右键文件进行转换，或在设置中开启自动转换。`
@@ -227,7 +230,23 @@ export class ProjectManager {
 
         switch (choice) {
             case '启用':
-                return await this.enableForProject(undefined, true);
+                // 用户已经在第一个弹窗中表达了启用意图，直接启用并自动转换，无需再次询问
+                const enabled = await this.enableForProject(undefined, false);
+                if (enabled) {
+                    const workspaceFolders = vscode.workspace.workspaceFolders;
+                    if (workspaceFolders && this.hasConvertibleFiles(workspaceFolders[0].uri.fsPath)) {
+                        // 直接执行转换，不再询问
+                        vscode.commands.executeCommand('documentConverter.convertFolder', workspaceFolders[0].uri);
+                        vscode.window.showInformationMessage(
+                            `✅ DocuGenius 已启用并开始转换文档！转换后的文件将保存到 "DocuGenius" 文件夹中。`
+                        );
+                    } else {
+                        vscode.window.showInformationMessage(
+                            `✅ DocuGenius 已在当前项目启用！您可以右键文件进行转换，或在设置中开启自动转换。`
+                        );
+                    }
+                }
+                return enabled;
             case '不启用':
                 // 只有在用户启用项目配置文件时才创建配置文件，避免重复提醒
                 if (this.configManager?.shouldCreateProjectConfig()) {
