@@ -238,11 +238,11 @@ export class ProjectManager {
                         // 直接执行转换，不再询问
                         vscode.commands.executeCommand('documentConverter.convertFolder', workspaceFolders[0].uri);
                         vscode.window.showInformationMessage(
-                            `✅ DocuGenius 已启用并开始转换文档！转换后的文件将保存到 "DocuGenius" 文件夹中。`
+                            `已开始转换文档！将自动保存到 "DocuGenius" 文件夹中。`
                         );
                     } else {
                         vscode.window.showInformationMessage(
-                            `✅ DocuGenius 已在当前项目启用！您可以右键文件进行转换，或在设置中开启自动转换。`
+                            `DocuGenius 已启用！可以右键文件进行转换，或在设置中开启自动转换。`
                         );
                     }
                 }

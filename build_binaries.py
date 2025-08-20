@@ -24,10 +24,10 @@ def run_command(cmd, capture_output=True):
         return False, "", str(e)
 
 def create_cli_source():
-    """Create the CLI source code"""
+    """Create the CLI source code with integrated image extraction"""
     cli_source = '''#!/usr/bin/env python3
 """
-DocuGenius CLI - Document to Markdown Converter
+DocuGenius CLI - Document to Markdown Converter with Image Extraction
 A standalone document converter for DocuGenius VS Code extension
 """
 
@@ -37,6 +37,8 @@ import argparse
 from pathlib import Path
 import json
 import re
+import hashlib
+from typing import List, Dict, Tuple, Optional
 
 def convert_text_file(file_path):
     """Convert text-based files (just read and return content)"""
@@ -314,57 +316,166 @@ def convert_pdf_file(file_path):
     except Exception as e:
         return f"# {Path(file_path).name}\\n\\nError converting PDF: {str(e)}"
 
-def convert_document_file(file_path):
-    """Convert document files using native Python libraries"""
+def extract_images_from_pdf(file_path, output_dir, min_image_size=50):
+    """Extract images from PDF using PyMuPDF (fitz)"""
+    try:
+        import fitz  # PyMuPDF
+    except ImportError:
+        return [], "PyMuPDF not available for image extraction"
+
+    try:
+        doc = fitz.open(str(file_path))
+        images_extracted = []
+
+        # Create output directory
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+        for page_num in range(len(doc)):
+            page = doc.load_page(page_num)
+            image_list = page.get_images()
+
+            for img_index, img in enumerate(image_list):
+                # Get image data
+                xref = img[0]
+                pix = fitz.Pixmap(doc, xref)
+
+                # Skip if image is too small (likely decorative)
+                if pix.width < min_image_size or pix.height < min_image_size:
+                    pix = None
+                    continue
+
+                # Determine image format and extension
+                if pix.n - pix.alpha < 4:  # GRAY or RGB
+                    img_ext = "png"
+                    img_data = pix.tobytes("png")
+                else:  # CMYK: convert to RGB first
+                    pix1 = fitz.Pixmap(fitz.csRGB, pix)
+                    img_ext = "png"
+                    img_data = pix1.tobytes("png")
+                    pix1 = None
+
+                # Generate unique filename
+                img_filename = f"page_{page_num + 1}_img_{img_index + 1}.{img_ext}"
+                img_path = Path(output_dir) / img_filename
+
+                # Save image
+                with open(img_path, "wb") as img_file:
+                    img_file.write(img_data)
+
+                # Add to extracted images list
+                image_info = {
+                    'filename': img_filename,
+                    'path': str(img_path),
+                    'page': page_num + 1,
+                    'width': pix.width,
+                    'height': pix.height,
+                    'format': img_ext.upper(),
+                    'size_bytes': len(img_data)
+                }
+                images_extracted.append(image_info)
+
+                pix = None
+
+        doc.close()
+        return images_extracted, None
+
+    except Exception as e:
+        return [], f"Error extracting images from PDF: {str(e)}"
+
+def convert_document_file(file_path, extract_images=True):
+    """Convert document files using native Python libraries with optional image extraction"""
     file_name = Path(file_path).name
     file_ext = Path(file_path).suffix.lower()
 
     try:
+        # First, convert the document content
         if file_ext in ['.docx']:
-            return convert_docx_file(file_path)
+            content = convert_docx_file(file_path)
         elif file_ext in ['.xlsx', '.xls']:
-            return convert_excel_file(file_path)
+            content = convert_excel_file(file_path)
         elif file_ext in ['.pptx']:
-            return convert_pptx_file(file_path)
+            content = convert_pptx_file(file_path)
         elif file_ext == '.pdf':
-            return convert_pdf_file(file_path)
+            content = convert_pdf_file(file_path)
         else:
             # Fallback for unsupported formats
-            markdown = f"# {file_name}\\n\\n"
-            markdown += f"**Document Type:** {file_ext.upper()} file\\n\\n"
-            markdown += "This file type is not yet supported for full conversion.\\n\\n"
-            markdown += f"- **File:** {file_name}\\n"
-            markdown += f"- **Size:** {os.path.getsize(file_path)} bytes\\n\\n"
-            return markdown
+            content = f"# {file_name}\\n\\n"
+            content += f"**Document Type:** {file_ext.upper()} file\\n\\n"
+            content += "This file type is not yet supported for full conversion.\\n\\n"
+            content += f"- **File:** {file_name}\\n"
+            content += f"- **Size:** {os.path.getsize(file_path)} bytes\\n\\n"
+            return content
+
+        # If image extraction is enabled and we have a PDF
+        if extract_images and file_ext == '.pdf':
+            try:
+                # Create images directory
+                doc_name = Path(file_path).stem
+                images_dir = Path(file_path).parent / "DocuGenius" / "images" / doc_name
+
+                # Extract images
+                images, error = extract_images_from_pdf(file_path, images_dir)
+
+                if images and not error:
+                    # Add image references to content
+                    content += "\\n\\n## Extracted Images\\n\\n"
+                    for img in images:
+                        relative_path = f"images/{doc_name}/{img['filename']}"
+                        alt_text = f"Image from page {img['page']}"
+                        content += f"![{alt_text}]({relative_path})\\n\\n"
+
+                    content += f"\\n<!-- Images extracted: {len(images)} images saved to {images_dir} -->\\n"
+                elif error:
+                    content += f"\\n\\n<!-- Note: Image extraction failed: {error} -->\\n"
+
+            except Exception as img_error:
+                content += f"\\n\\n<!-- Note: Image extraction failed: {str(img_error)} -->\\n"
+
+        return content
+
     except Exception as e:
         # Error handling - return basic info with error message
-        markdown = f"# {file_name}\\n\\n"
-        markdown += f"**Error converting {file_ext.upper()} file**\\n\\n"
-        markdown += f"Error: {str(e)}\\n\\n"
-        markdown += f"- **File:** {file_name}\\n"
-        markdown += f"- **Size:** {os.path.getsize(file_path)} bytes\\n"
-        return markdown
+        content = f"# {file_name}\\n\\n"
+        content += f"**Error converting {file_ext.upper()} file**\\n\\n"
+        content += f"Error: {str(e)}\\n\\n"
+        content += f"- **File:** {file_name}\\n"
+        content += f"- **Size:** {os.path.getsize(file_path)} bytes\\n"
+        return content
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("DocuGenius CLI - Document to Markdown Converter", file=sys.stderr)
-        print("Usage: docugenius-cli <file>", file=sys.stderr)
+    if len(sys.argv) < 2:
+        print("DocuGenius CLI - Document to Markdown Converter with Image Extraction", file=sys.stderr)
+        print("Usage: docugenius-cli <file> [extract_images]", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("Arguments:", file=sys.stderr)
+        print("  file           : Path to document file", file=sys.stderr)
+        print("  extract_images : true/false to enable/disable image extraction (default: true)", file=sys.stderr)
         print("", file=sys.stderr)
         print("Supported formats:", file=sys.stderr)
         print("  - Text files: .txt, .md, .markdown", file=sys.stderr)
         print("  - Data files: .json, .csv, .xml, .html", file=sys.stderr)
-        print("  - Documents: .docx, .xlsx, .pptx, .pdf", file=sys.stderr)
+        print("  - Documents: .docx, .xlsx, .pptx, .pdf (with image extraction)", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("Features:", file=sys.stderr)
+        print("  - Converts documents to Markdown format", file=sys.stderr)
+        print("  - Extracts images from PDF files (requires PyMuPDF)", file=sys.stderr)
+        print("  - Organizes images in structured folders", file=sys.stderr)
+        print("  - Maintains image quality and proper references", file=sys.stderr)
         sys.exit(1)
-    
+
     file_path = sys.argv[1]
-    
+    extract_images = True
+
+    if len(sys.argv) > 2:
+        extract_images = sys.argv[2].lower() not in ['false', 'no', '0']
+
     if not os.path.exists(file_path):
         print(f"Error: File not found: {file_path}", file=sys.stderr)
         sys.exit(1)
-    
+
     file_ext = Path(file_path).suffix.lower()
-    
+
     try:
         if file_ext in ['.txt', '.md', '.markdown']:
             content = convert_text_file(file_path)
@@ -375,13 +486,13 @@ def main():
         elif file_ext in ['.xml', '.html', '.htm']:
             content = convert_xml_file(file_path)
         elif file_ext in ['.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt', '.pdf']:
-            content = convert_document_file(file_path)
+            content = convert_document_file(file_path, extract_images)
         else:
             # Default to text file handling for unknown extensions
             content = convert_text_file(file_path)
-        
+
         print(content)
-        
+
     except Exception as e:
         print(f"Error processing file: {str(e)}", file=sys.stderr)
         sys.exit(1)
@@ -415,7 +526,7 @@ def create_darwin_binary():
 
         # Install PyInstaller and document processing libraries
         print("📥 Installing PyInstaller and document libraries...")
-        install_cmd = f"source {env_dir}/bin/activate && pip install pyinstaller python-docx python-pptx openpyxl PyPDF2"
+        install_cmd = f"source {env_dir}/bin/activate && pip install pyinstaller python-docx python-pptx openpyxl PyPDF2 PyMuPDF"
         success, _, _ = run_command(install_cmd)
 
         if not success:

@@ -86,3 +86,11 @@ jspm_packages/
 
 # Mac
 .DS_Store
+
+# Backup files
+*.old
+*.backup
+
+# Shell script versions (we use binaries now)
+bin/darwin/docugenius-cli.sh
+bin/win32/docugenius-cli.sh

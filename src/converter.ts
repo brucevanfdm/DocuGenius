@@ -75,7 +75,7 @@ export class MarkitdownConverter {
             const fileName = path.basename(filePath);
             vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: `Converting ${fileName} to Markdown...`,
+                title: `Converting ${fileName} ...`,
                 cancellable: false
             }, async (progress) => {
                 progress.report({ increment: 0 });
@@ -464,23 +464,39 @@ export class MarkitdownConverter {
                 this.statusManager.log(`🗑️ Deleted: ${path.basename(outputPath)} (source file ${fileName} was deleted)`);
             }
 
-            // Delete assets folder if it exists
+            // Delete images folder if it exists (consistent with Python image extractor)
             const originalDir = path.dirname(filePath);
             const originalBaseName = path.parse(fileName).name;
 
-            let assetsDir: string;
+            let imagesDir: string;
             if (this.configManager.shouldOrganizeInSubdirectory()) {
                 const subdirName = this.configManager.getMarkdownSubdirectoryName();
                 const markdownDir = path.join(originalDir, subdirName);
-                assetsDir = path.join(markdownDir, `${originalBaseName}_assets`);
+                imagesDir = path.join(markdownDir, 'images', originalBaseName);
             } else {
-                assetsDir = path.join(originalDir, `${originalBaseName}_assets`);
+                imagesDir = path.join(originalDir, 'images', originalBaseName);
             }
 
-            if (fs.existsSync(assetsDir)) {
-                fs.rmSync(assetsDir, { recursive: true, force: true });
-                console.log(`Deleted assets folder: ${assetsDir}`);
-                this.statusManager.log(`🗑️ Deleted assets: ${originalBaseName}_assets/`);
+            if (fs.existsSync(imagesDir)) {
+                fs.rmSync(imagesDir, { recursive: true, force: true });
+                console.log(`Deleted images folder: ${imagesDir}`);
+                this.statusManager.log(`🗑️ Deleted images: images/${originalBaseName}/`);
+            }
+
+            // Also clean up legacy assets folder if it exists
+            let legacyAssetsDir: string;
+            if (this.configManager.shouldOrganizeInSubdirectory()) {
+                const subdirName = this.configManager.getMarkdownSubdirectoryName();
+                const markdownDir = path.join(originalDir, subdirName);
+                legacyAssetsDir = path.join(markdownDir, `${originalBaseName}_assets`);
+            } else {
+                legacyAssetsDir = path.join(originalDir, `${originalBaseName}_assets`);
+            }
+
+            if (fs.existsSync(legacyAssetsDir)) {
+                fs.rmSync(legacyAssetsDir, { recursive: true, force: true });
+                console.log(`Deleted legacy assets folder: ${legacyAssetsDir}`);
+                this.statusManager.log(`🗑️ Deleted legacy assets: ${originalBaseName}_assets/`);
             }
 
             // Show status update
@@ -693,21 +709,21 @@ export class MarkitdownConverter {
                 return markdownContent;
             }
 
-            let assetsDir: string;
+            let imagesDir: string;
 
             if (this.configManager.shouldOrganizeInSubdirectory()) {
-                // Create assets directory in the kb subdirectory
+                // Create images directory in the subdirectory (consistent with Python extractor)
                 const subdirName = this.configManager.getMarkdownSubdirectoryName();
                 const markdownDir = path.join(originalDir, subdirName);
-                assetsDir = path.join(markdownDir, `${originalBaseName}_assets`);
+                imagesDir = path.join(markdownDir, 'images', originalBaseName);
             } else {
-                // Create assets directory in the same location as the original file
-                assetsDir = path.join(originalDir, `${originalBaseName}_assets`);
+                // Create images directory in the same location as the original file
+                imagesDir = path.join(originalDir, 'images', originalBaseName);
             }
 
-            // Create assets directory only when we have images
-            if (!fs.existsSync(assetsDir)) {
-                fs.mkdirSync(assetsDir, { recursive: true });
+            // Create images directory only when we have images
+            if (!fs.existsSync(imagesDir)) {
+                fs.mkdirSync(imagesDir, { recursive: true });
             }
 
             // Process image references in markdown
@@ -719,10 +735,10 @@ export class MarkitdownConverter {
             while ((match = imageRegex.exec(markdownContent)) !== null) {
                 const [fullMatch, altText, imagePath] = match;
 
-                // If image path is not already relative to assets folder, update it
-                if (!imagePath.startsWith(`${originalBaseName}_assets/`)) {
+                // If image path is not already relative to images folder, update it
+                if (!imagePath.startsWith(`images/${originalBaseName}/`)) {
                     const imageName = path.basename(imagePath);
-                    const newImagePath = `${originalBaseName}_assets/${imageName}`;
+                    const newImagePath = `images/${originalBaseName}/${imageName}`;
                     processedContent = processedContent.replace(fullMatch, `![${altText}](${newImagePath})`);
                 }
             }
