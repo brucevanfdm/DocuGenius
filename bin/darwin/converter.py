@@ -150,36 +150,10 @@ def simple_convert(file_path):
 
                     return content.strip()
                 except ImportError:
-                    # Fallback to PyPDF2
-                    import PyPDF2
-                    import warnings
-                    warnings.filterwarnings("ignore")
-
-                    content = ""
-                    with open(file_path, 'rb') as f:
-                        reader = PyPDF2.PdfReader(f)
-
-                        for i, page in enumerate(reader.pages):
-                            if len(reader.pages) > 1:
-                                content += f"## Page {i+1}\n\n"
-
-                            try:
-                                text = page.extract_text()
-                                if text and text.strip():
-                                    lines = text.split('\n')
-                                    cleaned_lines = []
-                                    for line in lines:
-                                        line = line.strip()
-                                        if line:
-                                            cleaned_lines.append(line)
-                                    content += '\n'.join(cleaned_lines) + "\n\n"
-                            except Exception:
-                                pass
-
-                    return content.strip()
+                    raise ImportError("pdfplumber library not installed. Run: pip install pdfplumber")
 
             except ImportError:
-                return "Error: PDF library not installed. Run: pip install PyPDF2 or pip install pdfplumber"
+                return "Error: pdfplumber library not installed. Run: pip install pdfplumber"
             except Exception as e:
                 return f"Error: {str(e)}"
                 

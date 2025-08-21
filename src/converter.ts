@@ -251,7 +251,12 @@ export class MarkitdownConverter {
                     // Process the markdown content to handle images if needed
                     let markdownContent = stdout;
 
-                    if (this.configManager.shouldExtractImages()) {
+                    // Check if we used Python converter.py (which includes image extraction)
+                    const isPythonConverter = command.includes('converter.py');
+
+                    if (this.configManager.shouldExtractImages() && !isPythonConverter) {
+                        // Only do additional image processing if we didn't use Python converter.py
+                        // Python converter.py already includes intelligent image extraction
                         markdownContent = await this.processImages(filePath, markdownContent);
                     }
 
@@ -391,13 +396,31 @@ export class MarkitdownConverter {
         const platform = process.platform;
         const commands: string[] = [];
 
-        // 1. Try embedded binary first
-        const binaryName = platform === 'win32' ? 'docugenius-cli.bat' : 'docugenius-cli';
-        const embeddedBinaryPath = this.context.asAbsolutePath(`bin/${platform}/${binaryName}`);
+        if (platform === 'win32') {
+            // Windows: 优先使用改进的智能脚本
+            const improvedScript = this.context.asAbsolutePath('bin/win32/docugenius-cli-improved.bat');
+            if (fs.existsSync(improvedScript)) {
+                commands.push(improvedScript);
+            }
 
-        // Check if embedded binary exists
-        if (fs.existsSync(embeddedBinaryPath)) {
-            commands.push(embeddedBinaryPath);
+            // 回退到原始脚本
+            const originalScript = this.context.asAbsolutePath('bin/win32/docugenius-cli.bat');
+            if (fs.existsSync(originalScript)) {
+                commands.push(originalScript);
+            }
+        } else if (platform === 'darwin') {
+            // macOS: 使用现有二进制文件
+            const binaryPath = this.context.asAbsolutePath('bin/darwin/docugenius-cli');
+            if (fs.existsSync(binaryPath)) {
+                commands.push(binaryPath);
+            }
+        } else {
+            // 其他平台: 尝试通用方法
+            const binaryName = 'docugenius-cli';
+            const embeddedBinaryPath = this.context.asAbsolutePath(`bin/${platform}/${binaryName}`);
+            if (fs.existsSync(embeddedBinaryPath)) {
+                commands.push(embeddedBinaryPath);
+            }
         }
 
         return commands;
@@ -622,17 +645,10 @@ export class MarkitdownConverter {
 
                 return intelligentContent;
             } else {
-                // Fallback to traditional processing
+                // No intelligent extraction result, just process existing image references
+                // The Python backend (converter.py) already handles fallback to traditional extraction
+                // and will include images inline without the "## Extracted Images" header
                 let processedContent = await this.processExistingImageReferences(originalFilePath, markdownContent);
-
-                // Add extracted images to markdown content if any were found
-                if (extractedImages.length > 0) {
-                    processedContent += this.generateImageMarkdown(extractedImages);
-
-                    // Add metadata comment
-                    processedContent += `\n\n<!-- Images extracted: ${extractedImages.length} images saved to ${imageExtractionResult.output_dir} -->\n`;
-                }
-
                 return processedContent;
             }
 
@@ -675,7 +691,7 @@ export class MarkitdownConverter {
             const minImageSize = this.configManager.getImageMinSize();
 
             // Call the intelligent image extractor with full content extraction
-            const command = `python "${imageExtractorPath}" "${filePath}" "${outputDir}" "${outputDir}" full_content ${minImageSize}`;
+            const command = `python "${imageExtractorPath}" "${filePath}" "${outputDir}" "${markdownDir}" full_content ${minImageSize}`;
             const { stdout, stderr } = await execAsync(command);
 
             if (stderr && !stdout) {
