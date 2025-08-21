@@ -79,142 +79,16 @@ class ImageExtractor:
             }
     
     def _extract_from_pdf(self) -> Dict:
-        """Extract images from PDF using PyMuPDF (fitz)"""
-        try:
-            import fitz  # PyMuPDF
-        except ImportError:
-            try:
-                # Fallback to pdfplumber for basic image detection
-                import pdfplumber
-                return self._extract_from_pdf_pdfplumber()
-            except ImportError:
-                return {
-                    'success': False,
-                    'error': 'PDF image extraction requires PyMuPDF (pip install PyMuPDF) or pdfplumber',
-                    'images': []
-                }
-        
-        try:
-            doc = fitz.open(str(self.document_path))
-            images_extracted = []
-            
-            for page_num in range(len(doc)):
-                page = doc.load_page(page_num)
-                image_list = page.get_images()
-                
-                for img_index, img in enumerate(image_list):
-                    # Get image data
-                    xref = img[0]
-                    pix = fitz.Pixmap(doc, xref)
-                    
-                    # Skip if image is too small (likely decorative)
-                    if pix.width < self.min_image_size or pix.height < self.min_image_size:
-                        pix = None
-                        continue
-                    
-                    # Determine image format and extension
-                    if pix.n - pix.alpha < 4:  # GRAY or RGB
-                        img_ext = "png"
-                        img_data = pix.tobytes("png")
-                    else:  # CMYK: convert to RGB first
-                        pix1 = fitz.Pixmap(fitz.csRGB, pix)
-                        img_ext = "png"
-                        img_data = pix1.tobytes("png")
-                        pix1 = None
-                    
-                    # Generate unique filename
-                    img_filename = self._generate_image_filename(
-                        f"page_{page_num + 1}_img_{img_index + 1}", 
-                        img_ext
-                    )
-                    img_path = self.output_dir / img_filename
-                    
-                    # Save image
-                    with open(img_path, "wb") as img_file:
-                        img_file.write(img_data)
-                    
-                    # Add to extracted images list
-                    image_info = {
-                        'filename': img_filename,
-                        'path': str(img_path),
-                        'relative_path': self._calculate_relative_path(img_path),
-                        'page': page_num + 1,
-                        'width': pix.width,
-                        'height': pix.height,
-                        'format': img_ext.upper(),
-                        'size_bytes': len(img_data)
-                    }
-                    images_extracted.append(image_info)
-                    self.extracted_images.append(image_info)
-                    
-                    pix = None
-            
-            doc.close()
-            
-            return {
-                'success': True,
-                'document': str(self.document_path),
-                'output_dir': str(self.output_dir),
-                'images_count': len(images_extracted),
-                'images': images_extracted
-            }
-            
-        except Exception as e:
-            return {
-                'success': False,
-                'error': f'Error extracting images from PDF: {str(e)}',
-                'images': []
-            }
-    
-    def _extract_from_pdf_pdfplumber(self) -> Dict:
-        """Fallback PDF image extraction using pdfplumber (limited functionality)"""
-        try:
-            import pdfplumber
-            
-            # pdfplumber doesn't directly extract images, but we can detect them
-            # This is a basic implementation that creates placeholder entries
-            with pdfplumber.open(str(self.document_path)) as pdf:
-                images_detected = []
-                
-                for page_num, page in enumerate(pdf.pages):
-                    # Check if page has images (basic detection)
-                    if hasattr(page, 'images') and page.images:
-                        for img_index, img_obj in enumerate(page.images):
-                            # Create placeholder entry since we can't extract actual image data
-                            image_info = {
-                                'filename': f"page_{page_num + 1}_img_{img_index + 1}_placeholder.txt",
-                                'path': str(self.output_dir / f"page_{page_num + 1}_img_{img_index + 1}_placeholder.txt"),
-                                'relative_path': f"images/{self.document_name}/page_{page_num + 1}_img_{img_index + 1}_placeholder.txt",
-                                'page': page_num + 1,
-                                'width': img_obj.get('width', 0),
-                                'height': img_obj.get('height', 0),
-                                'format': 'PLACEHOLDER',
-                                'size_bytes': 0,
-                                'note': 'Image detected but not extracted (requires PyMuPDF for full extraction)'
-                            }
-                            images_detected.append(image_info)
-                            
-                            # Create placeholder file
-                            placeholder_path = self.output_dir / image_info['filename']
-                            with open(placeholder_path, 'w') as f:
-                                f.write(f"Image placeholder for page {page_num + 1}, image {img_index + 1}\n")
-                                f.write("Install PyMuPDF (pip install PyMuPDF) for actual image extraction.\n")
-                
-                return {
-                    'success': True,
-                    'document': str(self.document_path),
-                    'output_dir': str(self.output_dir),
-                    'images_count': len(images_detected),
-                    'images': images_detected,
-                    'note': 'Limited extraction - install PyMuPDF for full image extraction'
-                }
-                
-        except Exception as e:
-            return {
-                'success': False,
-                'error': f'Error with pdfplumber fallback: {str(e)}',
-                'images': []
-            }
+        """PDF image extraction is not supported in lightweight mode"""
+        return {
+            'success': False,
+            'error': 'PDF image extraction is not supported in lightweight mode. DocuGenius uses pdfplumber for PDF text extraction only to keep dependencies small (0.8MB vs 45MB).',
+            'images': [],
+            'note': 'PDF files will be converted to text-only Markdown. Images in PDFs are not extracted to maintain lightweight dependencies.'
+        }
+
+
+
 
     def _extract_from_docx(self) -> Dict:
         """Extract images from DOCX files"""

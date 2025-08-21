@@ -1,0 +1,19 @@
+{
+  "install_mode": "smart",
+  "show_progress": true,
+  "auto_install": true,
+  "prefer_global": true,
+  "cache_duration_hours": 24,
+  "user_preferences": {
+    "pdf_processor": "pdfplumber",
+    "enable_image_extraction": false,
+    "min_image_size": 50,
+    "pdf_image_extraction_note": "PDF image extraction is disabled to keep dependencies lightweight (0.8MB vs 45MB)"
+  },
+  "advanced_options": {
+    "pip_timeout": 300,
+    "retry_count": 3,
+    "use_mirrors": false,
+    "mirror_url": "https://pypi.tuna.tsinghua.edu.cn/simple/"
+  }
+}
