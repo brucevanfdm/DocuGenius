@@ -271,24 +271,22 @@ def convert_pptx_file(file_path):
         return f"# {Path(file_path).name}\\n\\nError converting PowerPoint: {str(e)}"
 
 def convert_pdf_file(file_path):
-    """Convert PDF file using PyPDF2"""
+    """Convert PDF file using pdfplumber"""
     try:
-        import PyPDF2
+        import pdfplumber
 
         file_name = Path(file_path).name
         markdown = f"# {file_name}\\n\\n"
 
-        with open(file_path, 'rb') as file:
-            pdf_reader = PyPDF2.PdfReader(file)
+        with pdfplumber.open(file_path) as pdf:
+            markdown += f"**Total Pages:** {len(pdf.pages)}\\n\\n"
 
-            markdown += f"**Total Pages:** {len(pdf_reader.pages)}\\n\\n"
-
-            for i, page in enumerate(pdf_reader.pages, 1):
+            for i, page in enumerate(pdf.pages, 1):
                 markdown += f"## Page {i}\\n\\n"
 
                 try:
                     text = page.extract_text()
-                    if text.strip():
+                    if text and text.strip():
                         # Clean up the extracted text
                         lines = text.split('\\n')
                         cleaned_lines = []
@@ -312,75 +310,13 @@ def convert_pdf_file(file_path):
         return markdown
 
     except ImportError:
-        return f"# {Path(file_path).name}\\n\\nError: PyPDF2 library not available"
+        return f"# {Path(file_path).name}\\n\\nError: pdfplumber library not available"
     except Exception as e:
         return f"# {Path(file_path).name}\\n\\nError converting PDF: {str(e)}"
 
 def extract_images_from_pdf(file_path, output_dir, min_image_size=50):
-    """Extract images from PDF using PyMuPDF (fitz)"""
-    try:
-        import fitz  # PyMuPDF
-    except ImportError:
-        return [], "PyMuPDF not available for image extraction"
-
-    try:
-        doc = fitz.open(str(file_path))
-        images_extracted = []
-
-        # Create output directory
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
-
-        for page_num in range(len(doc)):
-            page = doc.load_page(page_num)
-            image_list = page.get_images()
-
-            for img_index, img in enumerate(image_list):
-                # Get image data
-                xref = img[0]
-                pix = fitz.Pixmap(doc, xref)
-
-                # Skip if image is too small (likely decorative)
-                if pix.width < min_image_size or pix.height < min_image_size:
-                    pix = None
-                    continue
-
-                # Determine image format and extension
-                if pix.n - pix.alpha < 4:  # GRAY or RGB
-                    img_ext = "png"
-                    img_data = pix.tobytes("png")
-                else:  # CMYK: convert to RGB first
-                    pix1 = fitz.Pixmap(fitz.csRGB, pix)
-                    img_ext = "png"
-                    img_data = pix1.tobytes("png")
-                    pix1 = None
-
-                # Generate unique filename
-                img_filename = f"page_{page_num + 1}_img_{img_index + 1}.{img_ext}"
-                img_path = Path(output_dir) / img_filename
-
-                # Save image
-                with open(img_path, "wb") as img_file:
-                    img_file.write(img_data)
-
-                # Add to extracted images list
-                image_info = {
-                    'filename': img_filename,
-                    'path': str(img_path),
-                    'page': page_num + 1,
-                    'width': pix.width,
-                    'height': pix.height,
-                    'format': img_ext.upper(),
-                    'size_bytes': len(img_data)
-                }
-                images_extracted.append(image_info)
-
-                pix = None
-
-        doc.close()
-        return images_extracted, None
-
-    except Exception as e:
-        return [], f"Error extracting images from PDF: {str(e)}"
+    """PDF image extraction not supported in lightweight mode"""
+    return [], "PDF image extraction is not supported in lightweight mode (pdfplumber does not support image extraction)"
 
 def convert_document_file(file_path, extract_images=True):
     """Convert document files using native Python libraries with optional image extraction"""
@@ -408,28 +344,8 @@ def convert_document_file(file_path, extract_images=True):
 
         # If image extraction is enabled and we have a PDF
         if extract_images and file_ext == '.pdf':
-            try:
-                # Create images directory
-                doc_name = Path(file_path).stem
-                images_dir = Path(file_path).parent / "DocuGenius" / "images" / doc_name
-
-                # Extract images
-                images, error = extract_images_from_pdf(file_path, images_dir)
-
-                if images and not error:
-                    # Add image references to content
-                    content += "\\n\\n## Extracted Images\\n\\n"
-                    for img in images:
-                        relative_path = f"images/{doc_name}/{img['filename']}"
-                        alt_text = f"Image from page {img['page']}"
-                        content += f"![{alt_text}]({relative_path})\\n\\n"
-
-                    content += f"\\n<!-- Images extracted: {len(images)} images saved to {images_dir} -->\\n"
-                elif error:
-                    content += f"\\n\\n<!-- Note: Image extraction failed: {error} -->\\n"
-
-            except Exception as img_error:
-                content += f"\\n\\n<!-- Note: Image extraction failed: {str(img_error)} -->\\n"
+            # Note about image extraction limitation
+            content += "\\n\\n<!-- Note: PDF image extraction is not supported in lightweight mode (using pdfplumber) -->\\n"
 
         return content
 
@@ -455,13 +371,13 @@ def main():
         print("Supported formats:", file=sys.stderr)
         print("  - Text files: .txt, .md, .markdown", file=sys.stderr)
         print("  - Data files: .json, .csv, .xml, .html", file=sys.stderr)
-        print("  - Documents: .docx, .xlsx, .pptx, .pdf (with image extraction)", file=sys.stderr)
+        print("  - Documents: .docx, .xlsx, .pptx, .pdf (text extraction only)", file=sys.stderr)
         print("", file=sys.stderr)
         print("Features:", file=sys.stderr)
         print("  - Converts documents to Markdown format", file=sys.stderr)
-        print("  - Extracts images from PDF files (requires PyMuPDF)", file=sys.stderr)
-        print("  - Organizes images in structured folders", file=sys.stderr)
-        print("  - Maintains image quality and proper references", file=sys.stderr)
+        print("  - High-quality text extraction from PDF files (using pdfplumber)", file=sys.stderr)
+        print("  - Lightweight and cross-platform consistent", file=sys.stderr)
+        print("  - Fast installation and execution", file=sys.stderr)
         sys.exit(1)
 
     file_path = sys.argv[1]
@@ -507,6 +423,17 @@ def create_darwin_binary():
     print("🔨 Building DocuGenius macOS Binary")
     print("=" * 40)
 
+    # Detect current architecture
+    import platform
+    arch = platform.machine()
+    print(f"🏗️  Building for architecture: {arch}")
+    if arch == "arm64":
+        print("   (Apple Silicon - ARM64)")
+    elif arch == "x86_64":
+        print("   (Intel - x86_64)")
+    else:
+        print(f"   (Unknown architecture: {arch})")
+
     # Create temporary CLI source file
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
         f.write(create_cli_source())
@@ -526,7 +453,7 @@ def create_darwin_binary():
 
         # Install PyInstaller and document processing libraries
         print("📥 Installing PyInstaller and document libraries...")
-        install_cmd = f"source {env_dir}/bin/activate && pip install pyinstaller python-docx python-pptx openpyxl PyPDF2 PyMuPDF"
+        install_cmd = f"source {env_dir}/bin/activate && pip install pyinstaller python-docx python-pptx openpyxl pdfplumber"
         success, _, _ = run_command(install_cmd)
 
         if not success:
@@ -535,7 +462,8 @@ def create_darwin_binary():
 
         # Build the executable
         print("🔨 Building executable...")
-        build_cmd = f"source {env_dir}/bin/activate && python -m PyInstaller --onefile --name docugenius-cli {cli_file}"
+        # Add optimization flags for smaller binary size and better compatibility
+        build_cmd = f"source {env_dir}/bin/activate && python -m PyInstaller --onefile --name docugenius-cli --strip --optimize=2 {cli_file}"
 
         success, stdout, stderr = run_command(build_cmd, capture_output=False)
 
