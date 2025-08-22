@@ -313,7 +313,10 @@ DocuGenius/
 
 ### 系统要求
 - **Windows**: Windows 10或更高版本，Python 3.6+
-- **macOS**: macOS 10.14或更高版本，Python 3.6+
+- **macOS**: macOS 11.0 (Big Sur) 或更高版本
+  - **Apple Silicon Mac**: 原生 ARM64 支持，最佳性能
+  - **Intel Mac**: 需要 Rosetta 2（首次运行时自动安装）
+    - 手动安装：`/usr/sbin/softwareupdate --install-rosetta`
 - **推荐依赖**: PyMuPDF, python-docx, python-pptx, openpyxl
 
 ### 安装建议

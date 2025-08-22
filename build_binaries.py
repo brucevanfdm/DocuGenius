@@ -482,7 +482,7 @@ def create_darwin_binary():
         darwin_dir = Path("bin/darwin")
         darwin_dir.mkdir(parents=True, exist_ok=True)
 
-        # Copy the executable to the bin directory
+        # Copy the executable to the bin directory (compatible with both architectures via Rosetta 2)
         target_path = darwin_dir / "docugenius-cli"
 
         shutil.copy2(exe_path, target_path)

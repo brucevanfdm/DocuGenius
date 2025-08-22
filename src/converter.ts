@@ -423,31 +423,12 @@ export class MarkitdownConverter {
         const platform = process.platform;
         const commands: string[] = [];
 
-        if (platform === 'win32') {
-            // Windows: 优先使用改进的智能脚本
-            const improvedScript = this.context.asAbsolutePath('bin/win32/docugenius-cli-improved.bat');
-            if (fs.existsSync(improvedScript)) {
-                commands.push(improvedScript);
-            }
-
-            // 回退到原始脚本
-            const originalScript = this.context.asAbsolutePath('bin/win32/docugenius-cli.bat');
-            if (fs.existsSync(originalScript)) {
-                commands.push(originalScript);
-            }
-        } else if (platform === 'darwin') {
-            // macOS: 使用现有二进制文件
-            const binaryPath = this.context.asAbsolutePath('bin/darwin/docugenius-cli');
-            if (fs.existsSync(binaryPath)) {
-                commands.push(binaryPath);
-            }
-        } else {
-            // 其他平台: 尝试通用方法
-            const binaryName = 'docugenius-cli';
-            const embeddedBinaryPath = this.context.asAbsolutePath(`bin/${platform}/${binaryName}`);
-            if (fs.existsSync(embeddedBinaryPath)) {
-                commands.push(embeddedBinaryPath);
-            }
+        // Simple approach: use platform-specific binary
+        const binaryName = platform === 'win32' ? 'docugenius-cli.bat' : 'docugenius-cli';
+        const embeddedBinaryPath = this.context.asAbsolutePath(`bin/${platform}/${binaryName}`);
+        
+        if (fs.existsSync(embeddedBinaryPath)) {
+            commands.push(embeddedBinaryPath);
         }
 
         return commands;

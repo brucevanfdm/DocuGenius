@@ -87,6 +87,10 @@
 ### 2. 环境准备 | Environment Setup
 
 **macOS**: 开箱即用！| Ready to use!
+- **Apple Silicon Mac**: 原生支持，最佳性能
+- **Intel Mac**: 需要 Rosetta 2（首次运行时自动安装）
+  - 如需手动安装：`/usr/sbin/softwareupdate --install-rosetta`
+  - 系统要求：macOS 11.0 (Big Sur) 或更高版本
 
 **Windows**: Python 库会自动安装，确保已安装 Python ([python.org](https://python.org))
 
@@ -319,10 +323,20 @@ Click the status to see detailed logs | 点击状态查看详细日志
 ### For Basic Document Conversion | 基本文档转换
 
 - **Windows**: Python 3.6+ with basic libraries (auto-installed)
-- **macOS/Linux**: Built-in binary (no additional requirements)
+- **macOS**: Built-in binary (no additional requirements)
+  - **Apple Silicon Mac**: Native ARM64 support, optimal performance
+  - **Intel Mac**: Requires Rosetta 2 (auto-installed on first run)
+    - Manual install: `/usr/sbin/softwareupdate --install-rosetta`
+    - System requirement: macOS 11.0 (Big Sur) or later
+- **Linux**: Built-in binary (no additional requirements)
 
 **Windows**：Python 3.6+ 及基础库（自动安装）
-**macOS/Linux**：内置二进制文件（无额外要求）
+**macOS**：内置二进制文件（无额外要求）
+- **Apple Silicon Mac**：原生 ARM64 支持，最佳性能
+- **Intel Mac**：需要 Rosetta 2（首次运行时自动安装）
+  - 手动安装：`/usr/sbin/softwareupdate --install-rosetta`
+  - 系统要求：macOS 11.0 (Big Sur) 或更高版本
+**Linux**：内置二进制文件（无额外要求）
 
 ### For Enhanced Image Extraction | 增强图片提取
 
