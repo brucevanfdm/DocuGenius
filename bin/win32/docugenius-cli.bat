@@ -105,8 +105,17 @@ if not exist "%SCRIPT_DIR%converter.py" (
     exit /b 1
 )
 
-REM Silent conversion
+REM Silent conversion with timeout and error handling
 
-REM Run the Python converter script silently
-python "%SCRIPT_DIR%converter.py" "%~1"
-exit /b %ERRORLEVEL%
+REM Run the Python converter script with timeout
+timeout /t 30 /nobreak >nul & (
+    python "%SCRIPT_DIR%converter.py" "%~1" "%~2" 2>nul
+    if errorlevel 1 (
+        echo Error: Conversion failed for "%~1"
+        exit /b 1
+    )
+) || (
+    echo Error: Conversion timeout or failed for "%~1"
+    exit /b 1
+)
+exit /b 0

@@ -86,8 +86,15 @@ export class MarkitdownConverter {
                     
                     progress.report({ increment: 50 });
                     
-                    // Save the markdown file
-                    fs.writeFileSync(outputPath, markdownContent, 'utf8');
+                    // Check if document splitting is needed
+                    if (this.configManager.isDocumentSplittingEnabled() && 
+                        markdownContent.length > this.configManager.getDocumentSplittingThreshold()) {
+                        // Split the document into multiple files
+                        await this.splitAndSaveDocument(outputPath, markdownContent, fileName);
+                    } else {
+                        // Save the markdown file as a single file
+                        fs.writeFileSync(outputPath, markdownContent, 'utf8');
+                    }
                     
                     progress.report({ increment: 100 });
                     
@@ -241,8 +248,27 @@ export class MarkitdownConverter {
 
             for (const command of commands) {
                 try {
-                    const fullCommand = `"${command}" "${filePath}"`;
-                    const { stdout, stderr } = await execAsync(fullCommand);
+                    // Check if this is a Python converter and pass extract images config
+                    const isPythonConverter = command.includes('converter.py');
+                    let fullCommand: string;
+                    
+                    if (isPythonConverter) {
+                        // Pass extract images configuration to Python converter
+                        const extractImages = this.configManager.shouldExtractImages();
+                        fullCommand = `"${command}" "${filePath}" ${extractImages ? 'true' : 'false'}`;
+                    } else {
+                        fullCommand = `"${command}" "${filePath}"`;
+                    }
+                    
+                    // Add timeout for Windows to prevent hanging
+                    const timeout = process.platform === 'win32' ? 120000 : 180000; // 2min for Windows, 3min for others
+                    
+                    const { stdout, stderr } = await Promise.race([
+                        execAsync(fullCommand, { maxBuffer: 50 * 1024 * 1024 }), // 50MB buffer for large files
+                        new Promise<never>((_, reject) => 
+                            setTimeout(() => reject(new Error(`Conversion timeout after ${timeout/1000}s`)), timeout)
+                        )
+                    ]);
 
                     if (stderr && !stdout) {
                         throw new Error(`Converter error: ${stderr}`);
@@ -252,9 +278,9 @@ export class MarkitdownConverter {
                     let markdownContent = stdout;
 
                     // Check if we used Python converter.py (which includes image extraction)
-                    const isPythonConverter = command.includes('converter.py');
+                    const usedPythonConverter = command.includes('converter.py');
 
-                    if (this.configManager.shouldExtractImages() && !isPythonConverter) {
+                    if (this.configManager.shouldExtractImages() && !usedPythonConverter) {
                         // Only do additional image processing if we didn't use Python converter.py
                         // Python converter.py already includes intelligent image extraction
                         markdownContent = await this.processImages(filePath, markdownContent);
@@ -264,6 +290,7 @@ export class MarkitdownConverter {
 
                 } catch (error) {
                     lastError = error instanceof Error ? error : new Error(String(error));
+                    console.log(`Command failed: ${command}, Error: ${lastError.message}`);
                     continue; // Try next command
                 }
             }
@@ -692,7 +719,16 @@ export class MarkitdownConverter {
 
             // Call the intelligent image extractor with full content extraction
             const command = `python "${imageExtractorPath}" "${filePath}" "${outputDir}" "${markdownDir}" full_content ${minImageSize}`;
-            const { stdout, stderr } = await execAsync(command);
+            
+            // Add timeout for image extraction
+            const timeout = process.platform === 'win32' ? 120000 : 180000; // 2min for Windows, 3min for others
+            
+            const { stdout, stderr } = await Promise.race([
+                execAsync(command, { maxBuffer: 50 * 1024 * 1024 }), // 50MB buffer for large files
+                new Promise<never>((_, reject) => 
+                    setTimeout(() => reject(new Error(`Image extraction timeout after ${timeout/1000}s`)), timeout)
+                )
+            ]);
 
             if (stderr && !stdout) {
                 throw new Error(`Image extractor error: ${stderr}`);
@@ -790,5 +826,105 @@ export class MarkitdownConverter {
         }
 
         return markdown;
+    }
+
+    /**
+     * Split large document into multiple markdown files
+     */
+    private async splitAndSaveDocument(outputPath: string, markdownContent: string, originalFileName: string): Promise<void> {
+        const threshold = this.configManager.getDocumentSplittingThreshold();
+        const parts: string[] = [];
+        
+        // Split content by sections (headers) first, then by character count if needed
+        const sections = this.splitByHeaders(markdownContent);
+        let currentPart = '';
+        let partIndex = 1;
+        
+        for (const section of sections) {
+            // If adding this section would exceed threshold, save current part
+            if (currentPart.length > 0 && (currentPart.length + section.length) > threshold) {
+                parts.push(currentPart.trim());
+                currentPart = section;
+                partIndex++;
+            } else {
+                currentPart += section;
+            }
+        }
+        
+        // Add the last part
+        if (currentPart.trim().length > 0) {
+            parts.push(currentPart.trim());
+        }
+        
+        // If we only have one part, save as original file
+        if (parts.length <= 1) {
+            fs.writeFileSync(outputPath, markdownContent, 'utf8');
+            return;
+        }
+        
+        // Save multiple parts
+        const dir = path.dirname(outputPath);
+        const baseName = path.basename(outputPath, '.md');
+        
+        for (let i = 0; i < parts.length; i++) {
+            const partFileName = `${baseName}_part${i + 1}.md`;
+            const partPath = path.join(dir, partFileName);
+            
+            // Add header to each part indicating it's part of a larger document
+            const partContent = `# ${originalFileName} - Part ${i + 1} of ${parts.length}\n\n${parts[i]}`;
+            fs.writeFileSync(partPath, partContent, 'utf8');
+        }
+        
+        // Create an index file
+        const indexContent = this.createIndexFile(originalFileName, parts.length, baseName);
+        const indexPath = path.join(dir, `${baseName}_index.md`);
+        fs.writeFileSync(indexPath, indexContent, 'utf8');
+    }
+    
+    /**
+     * Split content by markdown headers
+     */
+    private splitByHeaders(content: string): string[] {
+        const lines = content.split('\n');
+        const sections: string[] = [];
+        let currentSection = '';
+        
+        for (const line of lines) {
+            // Check if line is a header (starts with #)
+            if (line.trim().match(/^#{1,6}\s/)) {
+                // If we have accumulated content, save it as a section
+                if (currentSection.trim().length > 0) {
+                    sections.push(currentSection + '\n');
+                }
+                currentSection = line + '\n';
+            } else {
+                currentSection += line + '\n';
+            }
+        }
+        
+        // Add the last section
+        if (currentSection.trim().length > 0) {
+            sections.push(currentSection);
+        }
+        
+        return sections.length > 0 ? sections : [content];
+    }
+    
+    /**
+     * Create an index file for split documents
+     */
+    private createIndexFile(originalFileName: string, totalParts: number, baseName: string): string {
+        let indexContent = `# ${originalFileName} - Document Index\n\n`;
+        indexContent += `This document has been split into ${totalParts} parts for better readability and performance.\n\n`;
+        indexContent += `## Parts:\n\n`;
+        
+        for (let i = 1; i <= totalParts; i++) {
+            indexContent += `- [Part ${i}](./${baseName}_part${i}.md)\n`;
+        }
+        
+        indexContent += `\n---\n\n`;
+        indexContent += `*This index was automatically generated by DocuGenius.*`;
+        
+        return indexContent;
     }
 }

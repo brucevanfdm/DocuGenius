@@ -118,6 +118,22 @@ export class ConfigurationManager {
     }
 
     /**
+     * Check if document splitting is enabled
+     */
+    isDocumentSplittingEnabled(): boolean {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.SECTION);
+        return config.get<boolean>('enableDocumentSplitting', true);
+    }
+
+    /**
+     * Get document splitting threshold (character count)
+     */
+    getDocumentSplittingThreshold(): number {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.SECTION);
+        return config.get<number>('documentSplittingThreshold', 500000);
+    }
+
+    /**
      * Get batch conversion behavior setting
      */
     getBatchConversionBehavior(): 'askForEach' | 'askOnce' | 'convertAll' | 'skipAll' {

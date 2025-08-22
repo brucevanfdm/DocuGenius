@@ -19,8 +19,12 @@ echo.
 echo 🚀 DocuGenius CLI v2.3.6 - 智能版
 echo ========================================
 
-REM 获取输入文件
+REM 获取输入文件和图片提取参数
 set INPUT_FILE=%1
+set EXTRACT_IMAGES=%2
+
+REM 如果没有指定图片提取参数，默认为true
+if "%EXTRACT_IMAGES%"=="" set EXTRACT_IMAGES=true
 
 REM 检查是否提供了文件参数
 if "%INPUT_FILE%"=="" (
@@ -129,7 +133,7 @@ echo.
 echo 🔄 步骤5: 转换文档...
 echo 📝 正在处理 "%INPUT_FILE%"...
 
-python "%SCRIPT_DIR%converter.py" "%INPUT_FILE%"
+python "%SCRIPT_DIR%converter.py" "%INPUT_FILE%" "%EXTRACT_IMAGES%"
 set CONVERTER_EXIT_CODE=%ERRORLEVEL%
 
 REM 显示结果

@@ -153,9 +153,9 @@ export class FileWatcher implements vscode.Disposable {
 
         // Ask for confirmation for document conversion
         const choice = await vscode.window.showInformationMessage(
-            `📄 检测到新文档文件: ${fileName}`,
+            `📄 检测到新文件: ${fileName}`,
             {
-                modal: false,
+                modal: true,
                 detail: `是否要将此文档转换为 Markdown 格式？\n\n文件类型: ${fileExtension.toUpperCase()}\n转换后将保存到 "${this.configManager.getMarkdownSubdirectoryName()}" 文件夹中。`
             },
             '立即转换',

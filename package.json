@@ -57,57 +57,6 @@
           "default": true,
           "description": "%config.overwriteExisting.description%"
         },
-        "documentConverter.extractImages": {
-          "type": "boolean",
-          "default": true,
-          "description": "%config.extractImages.description%"
-        },
-        "documentConverter.imageMinSize": {
-          "type": "number",
-          "default": 100,
-          "description": "%config.imageMinSize.description%"
-        },
-        "documentConverter.imageFormats": {
-          "type": "array",
-          "default": [
-            "png",
-            "jpg",
-            "jpeg",
-            "gif",
-            "bmp"
-          ],
-          "description": "%config.imageFormats.description%"
-        },
-        "documentConverter.imageNamingConvention": {
-          "type": "string",
-          "enum": [
-            "sequential",
-            "descriptive",
-            "page_based"
-          ],
-          "default": "descriptive",
-          "description": "%config.imageNamingConvention.description%",
-          "enumDescriptions": [
-            "%config.imageNamingConvention.sequential%",
-            "%config.imageNamingConvention.descriptive%",
-            "%config.imageNamingConvention.pageBased%"
-          ]
-        },
-        "documentConverter.imageOutputFolder": {
-          "type": "string",
-          "default": "images",
-          "description": "%config.imageOutputFolder.description%"
-        },
-        "documentConverter.supportedExtensions": {
-          "type": "array",
-          "default": [
-            ".docx",
-            ".xlsx",
-            ".pptx",
-            ".pdf"
-          ],
-          "description": "%config.supportedExtensions.description%"
-        },
         "documentConverter.organizeInSubdirectory": {
           "type": "boolean",
           "default": true,
@@ -118,20 +67,27 @@
           "default": "DocuGenius",
           "description": "%config.markdownSubdirectoryName.description%"
         },
-        "documentConverter.showSuccessNotifications": {
+        "documentConverter.extractImages": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.extractImages.description%"
+        },
+        "documentConverter.imageOutputFolder": {
+          "type": "string",
+          "default": "images",
+          "description": "%config.imageOutputFolder.description%"
+        },
+        "documentConverter.enableDocumentSplitting": {
           "type": "boolean",
           "default": true,
-          "description": "%config.showSuccessNotifications.description%"
+          "description": "%config.enableDocumentSplitting.description%"
         },
-        "documentConverter.createProjectConfig": {
-          "type": "boolean",
-          "default": false,
-          "description": "%config.createProjectConfig.description%"
-        },
-        "documentConverter.copyTextFiles": {
-          "type": "boolean",
-          "default": false,
-          "description": "%config.copyTextFiles.description%"
+        "documentConverter.documentSplittingThreshold": {
+          "type": "number",
+          "default": 500000,
+          "minimum": 100000,
+          "maximum": 2000000,
+          "description": "%config.documentSplittingThreshold.description%"
         },
         "documentConverter.batchConversionBehavior": {
           "type": "string",
@@ -149,6 +105,21 @@
             "%config.batchConversionBehavior.convertAll%",
             "%config.batchConversionBehavior.skipAll%"
           ]
+        },
+        "documentConverter.showSuccessNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.showSuccessNotifications.description%"
+        },
+        "documentConverter.copyTextFiles": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.copyTextFiles.description%"
+        },
+        "documentConverter.createProjectConfig": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.createProjectConfig.description%"
         },
         "documentConverter.batchDetectionWindow": {
           "type": "number",

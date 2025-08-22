@@ -221,13 +221,22 @@ def convert_with_images(file_path, extract_images=True):
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        # Check if image extraction is requested (default: True)
-        extract_images = True
-        if len(sys.argv) > 2 and sys.argv[2].lower() in ['false', 'no', '0']:
-            extract_images = False
+        try:
+            # Default to extract images unless explicitly disabled
+            extract_images = True
+            if len(sys.argv) > 2 and sys.argv[2].lower() in ['false', 'no', '0']:
+                extract_images = False
 
-        result = convert_with_images(sys.argv[1], extract_images)
-        print(result)
+            result = convert_with_images(sys.argv[1], extract_images)
+            if result:
+                print(result)
+            else:
+                print("Error: Conversion failed")
+                sys.exit(1)
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            sys.exit(1)
     else:
         print("Usage: converter.py file_path [extract_images=true]")
         print("  extract_images: true/false to enable/disable image extraction (default: true)")
+        sys.exit(1)
