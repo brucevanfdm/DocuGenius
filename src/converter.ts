@@ -249,7 +249,10 @@ export class MarkitdownConverter {
             for (const command of commands) {
                 try {
                     // Check if this is a Python converter and pass extract images config
-                    const isPythonConverter = command.includes('converter.py');
+                    // For Windows, docugenius-cli.bat calls converter.py internally
+                    // For other platforms, we might use converter.py directly
+                    const isPythonConverter = command.includes('converter.py') || 
+                                            (process.platform === 'win32' && command.includes('docugenius-cli.bat'));
                     let fullCommand: string;
                     
                     if (isPythonConverter) {
@@ -277,12 +280,15 @@ export class MarkitdownConverter {
                     // Process the markdown content to handle images if needed
                     let markdownContent = stdout;
 
-                    // Check if we used Python converter.py (which includes image extraction)
-                    const usedPythonConverter = command.includes('converter.py');
+                    // Check if we used Python converter (which includes image extraction)
+                    // For Windows, we use docugenius-cli.bat which calls converter.py internally
+                    // For other platforms, we might use converter.py directly
+                    const usedPythonConverter = command.includes('converter.py') || 
+                                              (process.platform === 'win32' && command.includes('docugenius-cli.bat'));
 
                     if (this.configManager.shouldExtractImages() && !usedPythonConverter) {
-                        // Only do additional image processing if we didn't use Python converter.py
-                        // Python converter.py already includes intelligent image extraction
+                        // Only do additional image processing if we didn't use Python converter
+                        // Python converter already includes intelligent image extraction
                         markdownContent = await this.processImages(filePath, markdownContent);
                     }
 
