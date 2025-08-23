@@ -419,20 +419,22 @@ if __name__ == "__main__":
     return cli_source
 
 def create_darwin_binary():
-    """Create macOS binary using PyInstaller"""
-    print("🔨 Building DocuGenius macOS Binary")
-    print("=" * 40)
+    """Create macOS Universal Binary using PyInstaller (supports both Intel and Apple Silicon)"""
+    print("🔨 Building DocuGenius macOS Universal Binary")
+    print("=" * 50)
 
     # Detect current architecture
     import platform
-    arch = platform.machine()
-    print(f"🏗️  Building for architecture: {arch}")
-    if arch == "arm64":
+    current_arch = platform.machine()
+    print(f"🏗️  Current system architecture: {current_arch}")
+    if current_arch == "arm64":
         print("   (Apple Silicon - ARM64)")
-    elif arch == "x86_64":
+    elif current_arch == "x86_64":
         print("   (Intel - x86_64)")
     else:
-        print(f"   (Unknown architecture: {arch})")
+        print(f"   (Unknown architecture: {current_arch})")
+    
+    print("🎯 Target: Universal Binary (Intel + Apple Silicon)")
 
     # Create temporary CLI source file
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
@@ -460,16 +462,22 @@ def create_darwin_binary():
             print("❌ Failed to install required libraries")
             return False
 
-        # Build the executable
-        print("🔨 Building executable...")
-        # Add optimization flags for smaller binary size and better compatibility
-        build_cmd = f"source {env_dir}/bin/activate && python -m PyInstaller --onefile --name docugenius-cli --strip --optimize=2 {cli_file}"
+        # Build the executable with universal binary support
+        print("🔨 Building Universal Binary executable...")
+        # Use --target-arch=universal2 for universal binary support
+        build_cmd = f"source {env_dir}/bin/activate && python -m PyInstaller --onefile --name docugenius-cli --target-arch=universal2 --strip --optimize=2 {cli_file}"
 
         success, stdout, stderr = run_command(build_cmd, capture_output=False)
 
         if not success:
-            print("❌ Failed to build executable")
-            return False
+            print("⚠️  Universal binary build failed, falling back to current architecture...")
+            # Fallback to current architecture if universal build fails
+            build_cmd = f"source {env_dir}/bin/activate && python -m PyInstaller --onefile --name docugenius-cli --strip --optimize=2 {cli_file}"
+            success, stdout, stderr = run_command(build_cmd, capture_output=False)
+            
+            if not success:
+                print("❌ Failed to build executable")
+                return False
 
         # Check if the executable was created
         exe_path = "dist/docugenius-cli"
@@ -482,13 +490,29 @@ def create_darwin_binary():
         darwin_dir = Path("bin/darwin")
         darwin_dir.mkdir(parents=True, exist_ok=True)
 
-        # Copy the executable to the bin directory (compatible with both architectures via Rosetta 2)
+        # Copy the executable to the bin directory
         target_path = darwin_dir / "docugenius-cli"
 
         shutil.copy2(exe_path, target_path)
         os.chmod(target_path, 0o755)
 
-        print(f"✅ macOS binary created: {target_path}")
+        # Check if it's a universal binary
+        try:
+            result = subprocess.run(["lipo", "-info", str(target_path)], capture_output=True, text=True)
+            if "Architectures in the fat file" in result.stdout:
+                print(f"✅ Universal Binary created: {target_path}")
+                print(f"🏗️  Supported architectures: {result.stdout.split(':')[-1].strip()}")
+            else:
+                arch_info = result.stdout.strip().split()[-1] if result.stdout else "unknown"
+                print(f"✅ Single architecture binary created: {target_path}")
+                print(f"🏗️  Architecture: {arch_info}")
+                if current_arch == "x86_64" and arch_info == "x86_64":
+                    print("ℹ️  Note: This binary will work on Apple Silicon via Rosetta 2")
+                elif current_arch == "arm64" and arch_info == "arm64":
+                    print("ℹ️  Note: This binary is optimized for Apple Silicon")
+        except Exception as e:
+            print(f"⚠️  Could not verify binary architecture: {e}")
+
         print(f"📊 File size: {os.path.getsize(target_path) / (1024*1024):.1f} MB")
 
         # Clean up build artifacts

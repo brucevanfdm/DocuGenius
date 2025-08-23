@@ -87,8 +87,9 @@
 ### 2. 环境准备 | Environment Setup
 
 **macOS**: 开箱即用！| Ready to use!
-- **Apple Silicon Mac**: 原生支持，最佳性能
-- **Intel Mac**: 需要 Rosetta 2（首次运行时自动安装）
+- **Intel Mac**: 原生支持，最佳性能
+- **Apple Silicon Mac**: 通过 Rosetta 2 完全兼容，所有功能正常使用
+  - Rosetta 2 会在首次运行时自动安装
   - 如需手动安装：`/usr/sbin/softwareupdate --install-rosetta`
   - 系统要求：macOS 11.0 (Big Sur) 或更高版本
 
