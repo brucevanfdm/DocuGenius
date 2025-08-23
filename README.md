@@ -44,6 +44,29 @@
 - 本地文件夹即可转为知识库，无需手动构建
 - 实时同步更新，保持知识库最新状态
 
+## 💡 实际案例 | Real-World Example
+
+### 🎯 88万字文档智能问答协作
+
+**场景**: 处理大型技术文档，实现智能问答和深度协作
+
+![DocuGenius 88万字文档问答示例](image-demo.png)
+
+**案例亮点**:
+- 📚 **超大文档处理**: 成功处理88万字的复杂文档
+- 🤖 **智能问答**: 基于文档内容进行精准问答
+- 🔍 **深度检索**: 快速定位关键信息和相关内容
+- 💬 **协作对话**: 支持多轮对话，深入理解文档细节
+- ⚡ **高效响应**: 即使面对海量内容，依然保持快速响应
+
+**技术优势**:
+- 🧠 **智能理解**: AI 能够理解文档的整体结构和逻辑关系
+- 📊 **结构化处理**: 将复杂文档转换为 AI 友好的 Markdown 格式
+- 🎯 **精准检索**: 基于语义理解，而非简单的关键词匹配
+- 🔄 **上下文保持**: 在多轮对话中保持上下文连贯性
+
+> 💡 **提示**: 这正是 DocuGenius + TRAE 组合的强大之处 - 让 AI 能够真正"理解"和"协作"处理大型文档！
+
 ## 📥 Download | 下载
 
 [![Download Latest Release](https://img.shields.io/badge/Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/brucevanfdm/DocuGenius/releases/latest)
@@ -58,7 +81,7 @@
 
 - **📄 全格式支持**: Word (.docx)、Excel (.xlsx)、PowerPoint (.pptx)、PDF (.pdf) → AI 友好的 Markdown
 - **🧠 深度检索优化**: 转换后的文档完美适配 AI 检索生成，支持上下文理解
-- **🖼️ 多模态支持**: 智能提取图片并生成相对路径引用，AI 可同时理解文字和图像
+- **🖼️ 多模态支持**: 智能提取图片并生成相对路径引用（Word/PowerPoint）
 - **📁 知识库组织**: 创建 `DocuGenius/` 统一知识库，方便 AI IDE 索引和检索
 
 ### 🚀 智能特性
@@ -87,10 +110,10 @@
 ### 2. 环境准备 | Environment Setup
 
 **macOS**: 开箱即用！| Ready to use!
+
 - **Intel Mac**: 原生支持，最佳性能
 - **Apple Silicon Mac**: 通过 Rosetta 2 完全兼容，所有功能正常使用
-  - Rosetta 2 会在首次运行时自动安装
-  - 如需手动安装：`/usr/sbin/softwareupdate --install-rosetta`
+  - 需要安装 Rosetta 2：`/usr/sbin/softwareupdate --install-rosetta`
   - 系统要求：macOS 11.0 (Big Sur) 或更高版本
 
 **Windows**: Python 库会自动安装，确保已安装 Python ([python.org](https://python.org))
@@ -156,8 +179,8 @@ your-project/
     ├── 产品需求.md                  # AI 友好的 Markdown 格式
     ├── 数据分析.md                  # 表格数据转换为结构化文本
     ├── 项目汇报.md                  # 幻灯片内容完整提取
-    ├── 技术文档.md                  # PDF 内容精准转换
-    └── images/                     # 智能图片组织
+    ├── 技术文档.md                  # PDF 内容精准转换（仅文字）
+    └── images/                     # 智能图片组织（Word/PPT）
         ├── 产品需求/                # 按文档分类
         │   ├── page_1_img_1.png
         │   └── page_2_img_1.jpg
@@ -169,14 +192,14 @@ your-project/
 ### 🎯 AI IDE 优化特性
 
 **📊 结构化数据**: Excel 表格转换为 AI 可理解的 Markdown 表格
-**🖼️ 图文并茂**: 图片自动提取并生成相对路径引用
+**🖼️ 图文并茂**: 图片自动提取并生成相对路径引用（Word/PowerPoint）
 **🔍 语义优化**: 内容结构化处理，提升 AI 理解准确度
 **📝 上下文保持**: 保持文档原有的逻辑结构和层次关系
 
 ### 📋 支持格式 | Supported Formats
 
 - **📄 Office 文档**: `.docx`, `.xlsx`, `.pptx` → 完整内容提取
-- **📑 PDF 文件**: `.pdf` → 文字+图片双重提取
+- **📑 PDF 文件**: `.pdf` → 高质量文字提取（轻量化处理）
 - **📝 文本文件**: `.txt`, `.md`, `.json`, `.csv`, `.xml` → 统一检索
 
 ## 🆚 对比优势 | Competitive Advantages
@@ -187,7 +210,7 @@ your-project/
 | ------------------------ | --------------------- | ------------------- |
 | **💰 月费用**      | 10美金                | 20美金              |
 | **📊 Excel 支持**  | ✅ 完整支持           | ❌ 不支持           |
-| **🖼️ 图片提取**  | ✅ 高质量提取         | ⚠️ 基础支持       |
+| **🖼️ 图片提取**  | ✅ Word/PPT高质量提取 | ⚠️ 基础支持       |
 | **📁 本地文件**    | ✅ 完全控制           | ❌ 需上传           |
 | **🔄 实时同步**    | ✅ 自动更新           | ❌ 手动上传         |
 | **🧠 智能检索**    | ✅ TRAE 智能规划增强  | ⚠️ 基础检索       |
@@ -236,13 +259,6 @@ Access via `Ctrl+,` (Windows) or `Cmd+,` (Mac), then search "DocuGenius":
 - **Supported Extensions | 支持扩展**: File types to monitor (default: .docx, .xlsx, .pptx, .pdf)
 - **Copy Text Files | 复制文本**: Include text files in knowledge base (default: off)
 
-### Image Extraction Settings | 图片提取设置
-
-- **Image Min Size | 最小图片尺寸**: Minimum image size to extract (default: 50px)
-- **Image Formats | 图片格式**: Supported formats (PNG, JPG, GIF, BMP)
-- **Naming Convention | 命名规则**: How to name extracted images (page_based, sequential, descriptive)
-- **Output Folder | 输出文件夹**: Folder name for images (default: "images")
-
 ## 🖼️ Image Extraction Features | 图片提取功能
 
 DocuGenius automatically extracts images from your documents and organizes them intelligently:
@@ -251,11 +267,11 @@ DocuGenius 自动从文档中提取图片并智能组织：
 
 ### Supported Document Types | 支持的文档类型
 
-- **PDF Files**: Uses PyMuPDF for high-quality extraction with fallback to pdfplumber
+- **PDF Files**: Uses pdfplumber for lightweight, high-quality text extraction
 - **Word Documents (.docx)**: Extracts embedded images from document relationships
 - **PowerPoint (.pptx)**: Extracts images from slides and shapes
 
-**PDF 文件**：使用 PyMuPDF 进行高质量提取，回退到 pdfplumber
+**PDF 文件**：使用 pdfplumber 进行轻量化、高质量文字提取
 **Word 文档 (.docx)**：从文档关系中提取嵌入图片
 **PowerPoint (.pptx)**：从幻灯片和形状中提取图片
 
@@ -266,10 +282,10 @@ DocuGenius/
 ├── document.md
 └── images/
     └── document/                   # Organized by document name
-        ├── page_1_img_1.png       # Page-based naming
-        ├── page_1_img_2.jpg
-        ├── page_2_img_1.png
-        └── slide_3_img_1.gif
+        ├── page_1_img_1.png       # From Word documents
+        ├── page_1_img_2.jpg       # From Word documents
+        ├── slide_1_img_1.png      # From PowerPoint
+        └── slide_3_img_1.gif      # From PowerPoint
 ```
 
 ### Image Quality & Formats | 图片质量与格式
@@ -295,11 +311,12 @@ Extracted images are automatically referenced in the generated Markdown:
 
 ## Extracted Images
 
-![Image from pdf (Page 1)](images/document/page_1_img_1.png)
+![Image from docx (Page 1)](images/document/page_1_img_1.png)
 
 ![Image from pptx (Slide 2)](images/document/slide_2_img_1.jpg)
 
 <!-- Images extracted: 5 images saved to DocuGenius/images/document -->
+<!-- Note: PDF images are not extracted in lightweight mode -->
 ```
 
 - **Show Notifications | 显示通知**: Popup when conversion completes (default: on)
@@ -323,44 +340,47 @@ Click the status to see detailed logs | 点击状态查看详细日志
 
 ### For Basic Document Conversion | 基本文档转换
 
-- **Windows**: Python 3.6+ with basic libraries (auto-installed)
+- **Windows**: Python 3.6+ with basic libraries (auto-installed, ~16MB total)
+  - `python-docx`: ~2.2MB (Word documents)
+  - `openpyxl`: ~1.8MB (Excel files)
+  - `python-pptx`: ~2.4MB (PowerPoint files)
+  - `pdfplumber`: ~0.4MB (PDF files,)
 - **macOS**: Built-in binary (no additional requirements)
   - **Apple Silicon Mac**: Native ARM64 support, optimal performance
-  - **Intel Mac**: Requires Rosetta 2 (auto-installed on first run)
-    - Manual install: `/usr/sbin/softwareupdate --install-rosetta`
-    - System requirement: macOS 11.0 (Big Sur) or later
+  - **Intel Mac**: Native support, optimal performance
 - **Linux**: Built-in binary (no additional requirements)
 
-**Windows**：Python 3.6+ 及基础库（自动安装）
+**Windows**：Python 3.6+ 及基础库（自动安装，总计约16MB）
+
+- `python-docx`：约2.5MB（Word文档）
+- `openpyxl`：约2.4MB（Excel文件）
+- `python-pptx`：约2.5MB（PowerPoint文件）
+- `pdfplumber`：约8.4MB（PDF文件，包含pdfminer依赖）
+
 **macOS**：内置二进制文件（无额外要求）
+
 - **Apple Silicon Mac**：原生 ARM64 支持，最佳性能
-- **Intel Mac**：需要 Rosetta 2（首次运行时自动安装）
-  - 手动安装：`/usr/sbin/softwareupdate --install-rosetta`
-  - 系统要求：macOS 11.0 (Big Sur) 或更高版本
+- **Intel Mac**：原生支持，最佳性能
+
 **Linux**：内置二进制文件（无额外要求）
 
-### For Enhanced Image Extraction | 增强图片提取
+### 🔄 Automatic Dependency Installation | 自动依赖安装
 
-For optimal image extraction quality, install these Python packages:
+**Windows系统会根据文件类型自动安装所需依赖：**
 
-为获得最佳图片提取质量，请安装这些 Python 包：
+- 首次转换 `.docx`文件时自动安装 `python-docx`
+- 首次转换 `.xlsx`文件时自动安装 `openpyxl`
+- 首次转换 `.pptx`文件时自动安装 `python-pptx`
+- 首次转换 `.pdf`文件时自动安装 `pdfplumber`
 
-```bash
-# Recommended for best PDF image extraction
-pip install PyMuPDF
+**Windows automatically installs required dependencies based on file type:**
 
-# Alternative PDF libraries (fallback)
-pip install pdfplumber PyPDF2
+- Auto-installs `python-docx` when first converting `.docx` files
+- Auto-installs `openpyxl` when first converting `.xlsx` files
+- Auto-installs `python-pptx` when first converting `.pptx` files
+- Auto-installs `pdfplumber` when first converting `.pdf` files
 
-# Document libraries (auto-installed by CLI)
-pip install python-docx python-pptx openpyxl
-```
-
-**Note**: The extension works without these packages but with limited image extraction capabilities.
-
-**注意**：扩展在没有这些包的情况下也能工作，但图片提取功能有限。
-
-## 🔧 Troubleshooting | 故障排除
+### 🔧 Troubleshooting | 故障排除
 
 **Conversion not working?** | **转换不工作？**
 
@@ -373,9 +393,9 @@ pip install python-docx python-pptx openpyxl
 
 **Image extraction not working?** | **图片提取不工作？**
 
-1. Install PyMuPDF for better PDF image extraction: `pip install PyMuPDF`
-2. Check that image extraction is enabled in settings
+1. PDF image extraction is not supported (lightweight mode)
+2. Check that image extraction is enabled in settings for Word/PowerPoint
 3. Verify document contains extractable images (not just text)
-4. 安装 PyMuPDF 以获得更好的 PDF 图片提取：`pip install PyMuPDF`
-5. 检查设置中是否启用了图片提取
+4. PDF图片提取不支持（轻量化模式）
+5. 检查设置中是否为Word/PowerPoint启用了图片提取
 6. 验证文档包含可提取的图片（不仅仅是文本）

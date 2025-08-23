@@ -361,17 +361,17 @@ def convert_document_file(file_path, extract_images=True):
 
 def main():
     if len(sys.argv) < 2:
-        print("DocuGenius CLI - Document to Markdown Converter with Image Extraction", file=sys.stderr)
+        print("DocuGenius CLI - Document to Markdown Converter", file=sys.stderr)
         print("Usage: docugenius-cli <file> [extract_images]", file=sys.stderr)
         print("", file=sys.stderr)
         print("Arguments:", file=sys.stderr)
         print("  file           : Path to document file", file=sys.stderr)
-        print("  extract_images : true/false to enable/disable image extraction (default: true)", file=sys.stderr)
+        print("  extract_images : true/false to enable/disable image extraction for DOCX/PPTX/XLSX (default: true)", file=sys.stderr)
         print("", file=sys.stderr)
         print("Supported formats:", file=sys.stderr)
         print("  - Text files: .txt, .md, .markdown", file=sys.stderr)
         print("  - Data files: .json, .csv, .xml, .html", file=sys.stderr)
-        print("  - Documents: .docx, .xlsx, .pptx, .pdf (text extraction only)", file=sys.stderr)
+        print("  - Documents: .docx, .xlsx, .pptx (with image extraction), .pdf (text only)", file=sys.stderr)
         print("", file=sys.stderr)
         print("Features:", file=sys.stderr)
         print("  - Converts documents to Markdown format", file=sys.stderr)
@@ -572,7 +572,7 @@ python --version >nul 2>&1
 if errorlevel 1 (
     echo Error: Python is not installed or not in PATH
     echo Please install Python from https://python.org
-    echo Note: You may need to install: pip install python-docx python-pptx openpyxl PyPDF2
+    echo Note: You may need to install: pip install python-docx python-pptx openpyxl pdfplumber
     exit /b 1
 )
 

@@ -1,6 +1,6 @@
 {
   "name": "DocuGenius Test",
-  "version": "2.3.8",
+  "version": "2.4.0",
   "features": [
     "PDF processing with pdfplumber",
     "Cross-platform consistency",

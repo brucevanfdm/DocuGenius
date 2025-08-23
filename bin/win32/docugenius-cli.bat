@@ -46,23 +46,10 @@ if /i "%FILE_EXT%"==".pptx" (
     )
 )
 if /i "%FILE_EXT%"==".pdf" (
-    REM Try PyMuPDF first for better image extraction
-    python -c "import fitz" >nul 2>&1
+    REM Install pdfplumber for PDF text extraction
+    python -c "import pdfplumber" >nul 2>&1
     if errorlevel 1 (
-        pip install --user PyMuPDF >nul 2>&1
-        if errorlevel 1 (
-            REM Fallback to pdfplumber
-            python -c "import pdfplumber" >nul 2>&1
-            if errorlevel 1 (
-                pip install --user pdfplumber >nul 2>&1
-                if errorlevel 1 (
-                    python -c "import PyPDF2" >nul 2>&1
-                    if errorlevel 1 (
-                        pip install --user PyPDF2 >nul 2>&1
-                    )
-                )
-            )
-        )
+        pip install --user pdfplumber >nul 2>&1
     )
 )
 
@@ -83,8 +70,8 @@ if "%~1"=="" (
     echo   - Maintains image quality and proper references
     echo.
     echo Note: For optimal functionality, install:
-    echo   pip install python-docx python-pptx openpyxl PyMuPDF
-    echo   ^(PyMuPDF provides better PDF image extraction^)
+    echo   pip install python-docx python-pptx openpyxl pdfplumber
+    echo   ^(Dependencies are auto-installed when needed^)
     exit /b 1
 )
 

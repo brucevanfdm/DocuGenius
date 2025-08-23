@@ -488,119 +488,14 @@ class ImageExtractor:
             }
 
     def _extract_pdf_content_with_images(self) -> Dict:
-        """Extract PDF content and insert images at their original positions"""
-        try:
-            import fitz  # PyMuPDF
-        except ImportError:
-            return {
-                'success': False,
-                'error': 'PDF content extraction requires PyMuPDF (pip install PyMuPDF)',
-                'markdown_content': '',
-                'images': []
-            }
-
-        try:
-            doc = fitz.open(str(self.document_path))
-            markdown_lines = []
-            all_images = []
-
-            # Create output directory
-            self.output_dir.mkdir(parents=True, exist_ok=True)
-
-            for page_num in range(len(doc)):
-                page = doc.load_page(page_num)
-
-                # Add page header
-                markdown_lines.append(f"\n## Page {page_num + 1}\n")
-
-                # Extract text content
-                text_content = page.get_text()
-                if text_content.strip():
-                    # Split into paragraphs and clean up
-                    paragraphs = [p.strip() for p in text_content.split('\n\n') if p.strip()]
-                    for paragraph in paragraphs:
-                        if paragraph:
-                            markdown_lines.append(paragraph)
-                            markdown_lines.append("")  # Empty line after paragraph
-
-                # Extract and insert images for this page
-                image_list = page.get_images()
-                page_images = []
-
-                for img_index, img in enumerate(image_list):
-                    # Get image data
-                    xref = img[0]
-                    pix = fitz.Pixmap(doc, xref)
-
-                    # Skip if image is too small (likely decorative)
-                    if pix.width < self.min_image_size or pix.height < self.min_image_size:
-                        pix = None
-                        continue
-
-                    # Determine image format and extension
-                    if pix.n - pix.alpha < 4:  # GRAY or RGB
-                        img_ext = "png"
-                        img_data = pix.tobytes("png")
-                    else:  # CMYK: convert to RGB first
-                        pix1 = fitz.Pixmap(fitz.csRGB, pix)
-                        img_ext = "png"
-                        img_data = pix1.tobytes("png")
-                        pix1 = None
-
-                    # Generate unique filename
-                    img_filename = self._generate_image_filename(
-                        f"page_{page_num + 1}_img_{img_index + 1}",
-                        img_ext
-                    )
-                    img_path = self.output_dir / img_filename
-
-                    # Save image
-                    with open(img_path, "wb") as img_file:
-                        img_file.write(img_data)
-
-                    # Create image info
-                    image_info = {
-                        'filename': img_filename,
-                        'path': str(img_path),
-                        'relative_path': self._calculate_relative_path(img_path),
-                        'page': page_num + 1,
-                        'width': pix.width,
-                        'height': pix.height,
-                        'format': img_ext.upper(),
-                        'size_bytes': len(img_data)
-                    }
-                    page_images.append(image_info)
-                    all_images.append(image_info)
-
-                    pix = None
-
-                # Insert images after the text content for this page
-                if page_images:
-                    for img_info in page_images:
-                        alt_text = f"Image from page {img_info['page']}"
-                        markdown_lines.append(f"![{alt_text}]({img_info['relative_path']})")
-                        markdown_lines.append("")  # Empty line after image
-
-                markdown_lines.append("---\n")  # Page separator
-
-            doc.close()
-
-            return {
-                'success': True,
-                'document': str(self.document_path),
-                'output_dir': str(self.output_dir),
-                'images_count': len(all_images),
-                'images': all_images,
-                'markdown_content': '\n'.join(markdown_lines)
-            }
-
-        except Exception as e:
-            return {
-                'success': False,
-                'error': f'Error extracting PDF content with images: {str(e)}',
-                'markdown_content': '',
-                'images': []
-            }
+        """PDF content with images is not supported in lightweight mode"""
+        return {
+            'success': False,
+            'error': 'PDF image extraction is not supported in lightweight mode. DocuGenius uses pdfplumber for PDF text extraction only to keep dependencies small.',
+            'markdown_content': '',
+            'images': [],
+            'note': 'Use simple PDF text conversion instead. Images in PDFs are not extracted to maintain lightweight dependencies.'
+        }
 
     def _extract_docx_content_with_images(self) -> Dict:
         """Extract DOCX content and insert images at their original positions"""
