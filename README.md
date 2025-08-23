@@ -53,6 +53,7 @@
 ![DocuGenius 88万字文档问答示例](image-demo.png)
 
 **案例亮点**:
+
 - 📚 **超大文档处理**: 成功处理88万字的复杂文档
 - 🤖 **智能问答**: 基于文档内容进行精准问答
 - 🔍 **深度检索**: 快速定位关键信息和相关内容
@@ -60,6 +61,7 @@
 - ⚡ **高效响应**: 即使面对海量内容，依然保持快速响应
 
 **技术优势**:
+
 - 🧠 **智能理解**: AI 能够理解文档的整体结构和逻辑关系
 - 📊 **结构化处理**: 将复杂文档转换为 AI 友好的 Markdown 格式
 - 🎯 **精准检索**: 基于语义理解，而非简单的关键词匹配
@@ -113,7 +115,7 @@
 
 - **Intel Mac**: 原生支持，最佳性能
 - **Apple Silicon Mac**: 通过 Rosetta 2 完全兼容，所有功能正常使用
-  - 需要安装 Rosetta 2：`/usr/sbin/softwareupdate --install-rosetta`
+  - 需要安装 Rosetta 2，打开终端，运行以下指令：`/usr/sbin/softwareupdate --install-rosetta`
   - 系统要求：macOS 11.0 (Big Sur) 或更高版本
 
 **Windows**: Python 库会自动安装，确保已安装 Python ([python.org](https://python.org))
